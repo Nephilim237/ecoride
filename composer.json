@@ -1,0 +1,21 @@
+{
+    "name": "ecoride/ecoride",
+    "version": "1.0.0",
+    "description": "Application web de covoiturage",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Ecoride\\Ecoride\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Coding City",
+            "email": "codingcity237@gmail.com"
+        }
+    ],
+    "require": {
+        "mongodb/mongodb": "^1.19"
+    }
+}
