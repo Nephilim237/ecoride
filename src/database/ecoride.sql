@@ -12,6 +12,7 @@ CREATE TABLE user (
     telephone VARCHAR(64) NOT NULL,
     adresse VARCHAR(64) NOT NULL,
     pseudo VARCHAR(64) NOT NULL UNIQUE,
+    credits INT ,
     role_admin INT NOT NULL DEFAULT 1,
     date_naissance DATE NOT NULL,
     photo VARCHAR(255),
@@ -109,13 +110,8 @@ CREATE TABLE avis (
     INDEX idx_passager (passager_id)
 );
 
-CREATE TABLE configuration (
-    configuration_id INT PRIMARY KEY AUTO_INCREMENT,
-    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE parametre (
-    parametre_id INT PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE preference (
+    preference_id INT PRIMARY KEY AUTO_INCREMENT,
     propriete VARCHAR(64) NOT NULL ,
     valeur VARCHAR(64) NOT NULL ,
     conducteur_id INT NOT NULL ,
@@ -123,16 +119,6 @@ CREATE TABLE parametre (
     FOREIGN KEY (conducteur_id) REFERENCES user (user_id),
     UNIQUE KEY unique_conducteur_proprietaire (conducteur_id, propriete)
 );
-
-CREATE TABLE preference (
-    user_id INT,
-    configuration_id INT,
-    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, configuration_id),
-    FOREIGN KEY (user_id) REFERENCES user(user_id),
-    FOREIGN KEY (configuration_id) REFERENCES configuration(configuration_id)
-);
-
 -- Insertion des role en BD
 
 INSERT INTO role (libelle)
