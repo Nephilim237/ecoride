@@ -41,9 +41,7 @@ class Router
 
     private function executeCallback($callback) {
         if(is_string($callback)) {
-            list($controllerName, $method) = explode('@', $callback); //RideController@search
-            $controllerName = 'Ridecontroller';
-            $method = 'search';
+            list($controllerName, $method) = explode('@', $callback); //['RideController', 'search']
             $controller = "Ecoride\\Ecoride\\Controllers\\$controllerName";
 
             if(class_exists($controller)) {

@@ -2,6 +2,7 @@
 
 require_once '../vendor/autoload.php';
 require_once '../config/config.php';
+require_once '../src/lib/helpers.php';
 
 use Ecoride\Ecoride\Core\Router;
 use Ecoride\Ecoride\Core\Database;
@@ -23,7 +24,7 @@ $router->post('/register/handle', 'AuthController@handleRegister');
 $router->get('/trajets', 'RideController@index');
 $router->get('/logout', 'AuthController@logout');
 
-//$router->get('/trajets/recherche', 'RideController@search');
+$router->get('/trajets/recherche', 'RideController@search');
 //$router->post('/trajets/creer', 'RideController@create');
 //$router->get('/profil', 'UserController@profile');
 

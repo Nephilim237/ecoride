@@ -18,8 +18,12 @@ class Controller
         exit();
     }
 
-    protected function redirect($url): void
+    protected function redirect(string $path): void
     {
+        $scriptName = $_SERVER['SCRIPT_NAME'] ?? ''; ///ecoride/public/index.php
+        $basePath = str_replace('public/index.php', '', $scriptName);
+
+        $url = rtrim($basePath, '/') . '/' . ltrim($path, '/');
         header("Location: $url");
         exit();
     }
