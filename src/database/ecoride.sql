@@ -1,18 +1,19 @@
-CREATE DATABASE IF NOT EXISTS ecoride CHARACTER SET utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS ecoride CHARACTER SET utf8mb4;
 
 USE ecoride;
 
 -- Table utilisateur
 CREATE TABLE user (
     user_id INT PRIMARY KEY AUTO_INCREMENT,
-    nom VARCHAR(64) NOT NULL,
-    prenom VARCHAR(64) NOT NULL ,
+    nom VARCHAR(64) ,
+    prenom VARCHAR(64) ,
     email VARCHAR(64) NOT NULL UNIQUE,
     password VARCHAR(64) NOT NULL,
-    telephone VARCHAR(64) NOT NULL,
-    adresse VARCHAR(64) NOT NULL,
+    telephone VARCHAR(64) ,
+    adresse VARCHAR(64) ,
     pseudo VARCHAR(64) NOT NULL UNIQUE,
-    date_naissance DATE NOT NULL,
+    role_admin INT NOT NULL DEFAULT 1,
+    date_naissance DATE,
     photo VARCHAR(255),
     date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_email (email),
@@ -24,6 +25,11 @@ CREATE TABLE user (
 CREATE TABLE role (
     role_id INT PRIMARY KEY AUTO_INCREMENT,
     libelle ENUM('chauffeur', 'passager') DEFAULT 'passager' NOT NULL
+);
+
+CREATE TABLE role_admin (
+    role_id INT PRIMARY KEY AUTO_INCREMENT,
+    libelle ENUM('visiteur', 'utilisateur', 'employe', 'administrateur') DEFAULT 'visiteur' NOT NULL
 );
 
 CREATE TABLE role_user (
@@ -45,6 +51,7 @@ CREATE TABLE voiture (
     immatriculation VARCHAR(64) NOT NULL UNIQUE,
     energie ENUM('0', '1') DEFAULT '0',
     couleur VARCHAR(64),
+    nb_places INT,
     date_premiere_immatriculation DATE,
     user_id INT NOT NULL,
     marque_id INT NOT NULL,

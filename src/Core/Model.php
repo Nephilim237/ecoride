@@ -4,9 +4,9 @@ namespace Ecoride\Ecoride\Core;
 
 abstract class Model
 {
-    protected $connection;
-    protected $mongo;
-    protected $table;
+    protected \PDO $connection;
+    protected ?MongoManager $mongo;
+    protected string $table;
 
     public function __construct(){
         $this->connection = Database::getInstance()->getConnection();

@@ -2,8 +2,16 @@
 
 namespace Ecoride\Ecoride\Controllers;
 
-class HomeController
+use Ecoride\Ecoride\Core\Controller;
+
+class HomeController extends Controller
 {
+
+    public function index() {
+        $this->renderView('home/index', [
+            'title' => 'Page D\'accueil | EcoRide'
+        ]);
+    }
 
 
 

@@ -2,8 +2,20 @@
 
 namespace Ecoride\Ecoride\Core;
 
+use Ecoride\Ecoride\Services\AuthService;
+
 class Controller
 {
+    protected AuthService $auth;
+    protected Session $session;
+
+    public function __construct()
+    {
+        $this->auth = new AuthService();
+        $this->session = new Session();
+    }
+
+
     protected function renderView($view, $data = []): void
     {
         extract($data);
@@ -18,8 +30,9 @@ class Controller
         exit();
     }
 
-    protected function redirect($url): void
+    protected function redirect(string $path): void
     {
+        $url =  rtrim(BASE_URL, '/') . '/' . ltrim($path, '/');
         header("Location: $url");
         exit();
     }

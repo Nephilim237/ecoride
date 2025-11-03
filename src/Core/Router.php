@@ -28,7 +28,7 @@ class Router
             }
         }
 
-        return $this->handleNotFound();
+        return $this->handle_not_found('Aucune Route trouvee.');
     }
 
     private function matchRoute($route, $url): bool
@@ -42,8 +42,6 @@ class Router
     private function executeCallback($callback) {
         if(is_string($callback)) {
             list($controllerName, $method) = explode('@', $callback); //RideController@search
-            $controllerName = 'Ridecontroller';
-            $method = 'search';
             $controller = "Ecoride\\Ecoride\\Controllers\\$controllerName";
 
             if(class_exists($controller)) {
@@ -52,27 +50,32 @@ class Router
                     return $controllerInstance->$method();
                 }
 
-                return $this->handleError('Methode introuvable');
+                return $this->handle_server_error('Methode introuvable');
             }
 
-            return $this->handleError('Controleur introuvable');
+            return $this->handle_server_error('Controleur introuvable');
         }
 
         // Si callback invalide, alors, echec
-        return $this->handleError("Callback Invalide.");
+        return $this->handle_server_error("Callback Invalide.");
     }
 
-    private function handleNotFound(): bool
+    private function handle_not_found(string $message = ''): bool
     {
+        require_once __DIR__ .'/../Controllers/ErrorController.php';
+        //Facultatif
+        error_log($message);
+        notFound();
         http_response_code(404);
         $this->renderView('error/404');
         return false;
     }
 
-    public function handleError(string $message): bool
+    public function handle_server_error(string $message): bool
     {
-        //Facultatif
+        require_once __DIR__ . '/../Controllers/ErrorController.php';
         error_log($message);
+        serverError();
         http_response_code(500);
         $this->renderView('error/500');
         return false;

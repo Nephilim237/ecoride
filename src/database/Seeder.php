@@ -49,7 +49,7 @@ class Seeder
         $this->db->exec("SET FOREIGN_KEY_CHECKS = 0");
 
         $tables = [
-            'preference', 'parametre', 'configuration', 'avis', 'reservation',
+            'preference', 'role_admin', 'role', 'avis', 'reservation',
             'covoiturage', 'voiture', 'role_user','user','marque',
         ];
 
@@ -61,7 +61,7 @@ class Seeder
         $this->db->exec("SET FOREIGN_KEY_CHECKS = 1");
 
         // Nettoyer MongoDB
-        $this->mongo->getCollection('trajet_geolocalisation')->deleteMany([]);
+        $this->mongo->getCollection('trajets_geolocalisation')->deleteMany([]);
 
         echo "✅ Donnees nettoyees.";
     }
@@ -97,17 +97,19 @@ class Seeder
                 'nom' => $name,
                 'prenom' => $firstname,
                 'email' => $this->faker->unique()->email,
+                'role_admin' => $this->faker->randomElement([1, 3, 7, 15]),
                 'password' => password_hash('1234567890', PASSWORD_DEFAULT),
                 'telephone' => $this->faker->phoneNumber,
                 'adresse' => $this->faker->address,
                 'pseudo' => $this->generateUniquePseudo($firstname, $name), // A creer
+                'credits' => 20,
                 'date_naissance' => $this->faker->dateTimeBetween('-60 years', '-18 years')->format('Y-m-d'),
                 'photo' => $this->faker->optional(0.3)->imageUrl(200, 200, 'people', true, $firstname),
                 'date_creation' => $this->faker->dateTimeBetween('-1 years')->format('Y-m-d')
             ];
             $stmt = $this->db->prepare(
-                "INSERT INTO user (nom, prenom, email, password, telephone, adresse, pseudo, date_naissance, photo, date_creation)
-                    VALUES (:nom, :prenom, :email, :password, :telephone, :adresse, :pseudo, :date_naissance, :photo, :date_creation)"
+                "INSERT INTO user (nom, prenom, email, role_admin, password, telephone, adresse, pseudo, credits, date_naissance, photo, date_creation)
+                    VALUES (:nom, :prenom, :email, :role_admin, :password, :telephone, :adresse, :pseudo, :credits, :date_naissance, :photo, :date_creation)"
             );
             $stmt->execute($userData);
             $this->userIds[] = $this->db->lastInsertId();
@@ -177,6 +179,7 @@ class Seeder
                     'immatriculation' => $this->generateFrenchLicensePlate(), // A creer
                     'energie' => $this->faker->randomElement(['0', '1']),
                     'couleur' => $this->faker->colorName,
+                    'nb_places' => $this->faker->numberBetween(3, 7),
                     'date_premiere_immatriculation' => $this->faker
                         ->dateTimeBetween('-8 years', '-1 years')
                         ->format('Y-m-d'),
@@ -184,8 +187,8 @@ class Seeder
                     'marque_id' => $marque->marque_id
                 ];
                 $stmt = $this->db->prepare(
-                    "INSERT INTO voiture (modele, immatriculation, energie, couleur, date_premiere_immatriculation, user_id, marque_id) 
-                    VALUES (:modele, :immatriculation, :energie, :couleur, :date_premiere_immatriculation, :user_id, :marque_id)"
+                    "INSERT INTO voiture (modele, immatriculation, energie, couleur, nb_places, date_premiere_immatriculation, user_id, marque_id) 
+                    VALUES (:modele, :immatriculation, :energie, :couleur, :nb_places, :date_premiere_immatriculation, :user_id, :marque_id)"
                 );
                 $stmt->execute($infoVoiture);
 
@@ -297,15 +300,13 @@ class Seeder
 
     private function displayStatistics(array $stats): void
     {
-        $totalUsers = count($this->userIds);
-
         echo "✅ Repartition des roles...\n";
         echo "👤 Passagers: {$stats['role_passager']} \n";
         echo "🚗 Chauffeur: {$stats['role_chauffeur']} \n";
         echo "🔗 Chauffeur-Passagers: {$stats['role_passager_chauffeur']} \n";
     }
 
-    private function seedCovoiturages()
+    private function seedCovoiturages(): void
     {
         echo "🛣️ Création des covoiturages...\n";
 
@@ -387,7 +388,7 @@ class Seeder
         return $arrival->format('H:i:s');
     }
 
-    private function seedReservations()
+    private function seedReservations(): void
     {
         echo "🎫 Création des réservations...\n";
 
@@ -504,7 +505,7 @@ class Seeder
 
                 foreach ($parametres as $param) {
                     $stmt = $this->db->prepare(
-                        "INSERT INTO parametre (propriete, valeur, conducteur_id) VALUES (?, ?, ?)"
+                        "INSERT INTO preference (propriete, valeur, conducteur_id) VALUES (?, ?, ?)"
                     );
                     $stmt->execute([$param['propriete'], $param['valeur'], $userId]);
                     $countParametre++;
