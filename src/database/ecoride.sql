@@ -6,18 +6,19 @@ USE ecoride;
 CREATE TABLE user
 (
     user_id        INT PRIMARY KEY AUTO_INCREMENT,
-    nom            VARCHAR(64) NOT NULL,
-    prenom         VARCHAR(64) NOT NULL,
+    nom            VARCHAR(64) ,
+    prenom         VARCHAR(64) ,
     email          VARCHAR(64) NOT NULL UNIQUE,
     password       VARCHAR(64) NOT NULL,
-    telephone      VARCHAR(64) NOT NULL,
-    adresse        VARCHAR(64) NOT NULL,
+    telephone      VARCHAR(64) ,
+    adresse        VARCHAR(64) ,
     pseudo         VARCHAR(64) NOT NULL UNIQUE,
     credits        INT,
     role_admin     INT         NOT NULL DEFAULT 1,
-    date_naissance DATE        NOT NULL,
+    date_naissance DATE ,
     photo          VARCHAR(255),
     date_creation  TIMESTAMP            DEFAULT CURRENT_TIMESTAMP,
+    remember_me    VARCHAR(128),
     INDEX idx_email (email),
     INDEX idx_pseudo (pseudo),
     INDEX idx_date_naissance (date_naissance),
@@ -28,12 +29,6 @@ CREATE TABLE role
 (
     role_id INT PRIMARY KEY AUTO_INCREMENT,
     libelle ENUM ('chauffeur', 'passager') DEFAULT 'passager' NOT NULL
-);
-
-CREATE TABLE role_admin
-(
-    role_id INT PRIMARY KEY AUTO_INCREMENT,
-    libelle ENUM ('visiteur', 'utilisateur', 'employe', 'administrateur') DEFAULT 'visiteur' NOT NULL
 );
 
 CREATE TABLE role_user
