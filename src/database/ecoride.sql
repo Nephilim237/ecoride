@@ -18,6 +18,7 @@ CREATE TABLE user
     date_naissance DATE ,
     photo          VARCHAR(255),
     date_creation  TIMESTAMP            DEFAULT CURRENT_TIMESTAMP,
+    remember_me    VARCHAR(128),
     INDEX idx_email (email),
     INDEX idx_pseudo (pseudo),
     INDEX idx_date_naissance (date_naissance),
@@ -28,12 +29,6 @@ CREATE TABLE role
 (
     role_id INT PRIMARY KEY AUTO_INCREMENT,
     libelle ENUM ('chauffeur', 'passager') DEFAULT 'passager' NOT NULL
-);
-
-CREATE TABLE role_admin
-(
-    role_id INT PRIMARY KEY AUTO_INCREMENT,
-    libelle ENUM ('visiteur', 'utilisateur', 'employe', 'administrateur') DEFAULT 'visiteur' NOT NULL
 );
 
 CREATE TABLE role_user

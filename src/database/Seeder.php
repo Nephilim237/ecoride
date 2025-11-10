@@ -267,14 +267,14 @@ class Seeder
     /**
      * Permet d'assigner des roles aux utilisateurs de EcoRide.
      * @param int $userId Represente l'identifiant de l'utilisateur auquel on veut attribuer un role
-     * @param int $role Represente le role qu'on va associer a l'utilisateur userId
+     * @param int $roleId Represente le role qu'on va associer a l'utilisateur userId
      * @return void Ne renvoie aucune valeur
      */
-    private function assignRole(int $userId, int $role): void
+    private function assignRole(int $userId, int $roleId): void
     {
         try {
             $stmt = $this->db->prepare("INSERT INTO role_user (user_id, role_id) VALUES (?, ?)");
-            $stmt->execute([$userId, $role]);
+            $stmt->execute([$userId, $roleId]);
         } catch (\PDOException $e) {
             // Ignorer les doublons
             if ($e->getCode() === '23000') {// Violation de contrainte d'unicite

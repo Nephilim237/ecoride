@@ -16,9 +16,8 @@
         }
     ],
     "require": {
-        "mongodb/mongodb": "^1.19"
-    },
-    "require-dev": {
-        "fakerphp/faker": "^1.23"
+        "mongodb/mongodb": "^1.19",
+        "filp/whoops": "^2.18",
+        "symfony/var-dumper": "^7.3"
     }
 }

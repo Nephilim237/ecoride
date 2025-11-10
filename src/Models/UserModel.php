@@ -8,6 +8,7 @@ class UserModel
 {
 
     private $connection;
+    protected string $table = 'user';
 
     public function __construct()
     {
@@ -53,5 +54,22 @@ class UserModel
 
         return $stmt->fetchColumn() > 0;
     }
+
+    public function find_by_username_or_email(string $identifier): mixed
+    {
+        $stmt = $this->connection->prepare("
+            SELECT * FROM user WHERE pseudo = ? OR  email = ?
+        ");
+        $stmt->execute([$identifier, $identifier]);
+        return $stmt->fetch();
+    }
+
+    public function find_by_remeber_token(string $token): mixed
+    {
+        $stmt = $this->connection->prepare("SELECT * FROM user WHERE remember_me = ?");
+        $stmt->execute([$token]);
+        return $stmt->fetch();
+    }
+
 
 }

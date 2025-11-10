@@ -1,6 +1,3 @@
-<?php require_once __DIR__ . '/../partials/header.php';
-?>
-
 <section class="flash-messages">
     <div class="container">
         <?php if ($this->session->has_flash('error')): ?>
@@ -82,7 +79,3 @@
             </div>
         </div>
     </section>
-
-
-<?php require_once __DIR__ . '/../partials/footer.php';
-?>

@@ -1,20 +1,11 @@
-<?php  require_once __DIR__. '/../partials/header.php';
-?>
     <section class="flash-messages">
         <div class="container">
             <?php if ($this->session->has_flash('error')): ?>
-                <div class="alert alert-error">
+                <div class="alert alert-danger">
                     <?= $this->session->get_flash('error') ?>
                 </div>
             <?php endif; ?>
-
-            <?php if ($this->session->has_flash('success')): ?>
-                <div class="alert alert-success">
-                    <?= $this->session->get_flash('success') ?>
-                </div>
-            <?php endif; ?>
         </div>
-
     </section>
 
 <section class="register-form py-5 my-5" id="register-form">
@@ -27,7 +18,7 @@
                             <h3 class="text-center outfit fw-600 fs-main-title er-text-dark mb-5">Connexion</h3>
                         </div>
                     </div>
-                    <form action="" method="post" class="er-form">
+                    <form action="<?= url('/login/handle') ?>" method="post" class="er-form">
                         <div class="mb-3">
                             <div class="col-md-10 col-sm-12 mx-auto">
                                 <label for="pseudo"
@@ -50,8 +41,9 @@
                         <div class="mb-3">
                             <div class="col-md-10 col-sm-12 mx-auto">
                                 <div class="form-check ms-3">
-                                    <input type="checkbox" class="form-check-input fs-18" value="" id="remember-me" checked>
-                                    <label for="remember-me" class="form-check-label fs-18 ps-2 fw-500 er-text-dark">Se
+                                    <input type="checkbox" name="remember_me" class="form-check-input fs-18" value=""
+                                           id="remember_me">
+                                    <label for="remember_me" class="form-check-label fs-18 ps-2 fw-500 er-text-dark">Se
                                         souvenir</label>
                                 </div>
                             </div>
@@ -69,6 +61,3 @@
         </div>
     </div>
 </section>
-
-<?php  require_once __DIR__. '/../partials/footer.php';
-?>
