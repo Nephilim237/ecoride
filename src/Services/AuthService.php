@@ -86,6 +86,10 @@ class AuthService
             'adresse' => $user->adresse ?? null,
             'photo' => $user->photo ?? null,
             'date_creation' => $user->date_creation ?? null,
+            'roles' => [
+                $this->userModel->is_driver($user->user_id) ? 'Chauffeur' : null,
+                $this->userModel->is_passenger($user->user_id) ? 'Passager' : null
+            ]
         ]);
         return true;
     }
@@ -112,11 +116,6 @@ class AuthService
         }
 
         return false;
-    }
-
-    public function is_logged_in(): bool
-    {
-        return $this->session->has_session('user');
     }
 
     public function logout(): void

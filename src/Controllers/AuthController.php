@@ -79,7 +79,7 @@ class AuthController extends Controller
             // Si cette function renvoie un test positif (bool=true), on connecte l'utilisateur et on le redirige vers
             // Sa page de profil
             $this->session->set_flash('success', 'Connexion reussie.');
-            $this->redirect('/profile');
+            $this->redirect('/profile', ['pseudo' => $identifier]);
         } else {
             // Sinon, on redirige vers le formulaires de connexion avec les erreurs
             $this->session->set_flash('error', 'Pseudo ou mot de passe incorrect.');
