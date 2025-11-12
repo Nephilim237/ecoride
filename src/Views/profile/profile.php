@@ -104,3 +104,5 @@
         </div>
     </div>
 </section>
+
+<?php //dump($currentUser) ?>

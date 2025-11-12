@@ -3,6 +3,8 @@
 namespace Ecoride\Ecoride\Models;
 
 use Ecoride\Ecoride\Core\Database;
+use Ecoride\Ecoride\Core\RoleManager;
+use http\Exception\InvalidArgumentException;
 
 class UserModel
 {
@@ -142,6 +144,42 @@ class UserModel
 
         $stmt->execute([$userId]);
         return $stmt->fetchColumn() > 0;
+    }
+
+    public function set_role_mask(int $userId, int $mask): bool
+    {
+        if (!RoleManager::is_valid_mask($mask)) {
+            throw new InvalidArgumentException("Masque de role invalide: $mask");
+        }
+
+        $stmt = $this->connection->prepare("UPDATE user SET role_admin = ? WHERE  user_id = ?");
+        return $stmt->execute([$mask, $userId]);
+    }
+
+    public function has_role(int $userId, string $role): bool
+    {
+        $userMask = $this->get_role_mask($userId);
+
+        return RoleManager::has_role($userMask, $role);
+    }
+
+    public function get_role_mask(int $userId): int
+    {
+        $stmt = $this->connection->prepare("SELECT role_admin FROM user WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        $result = $stmt->fetch();
+
+        return $result ? (int)$result->role_admin : RoleManager::VISITEUR;
+    }
+
+    public function get_role_info($userId): array
+    {
+        $mask = $this->get_role_mask($userId);
+        return [
+            'mask' => $mask,
+            'name' => RoleManager::get_admin_role_name($mask),
+            'roles' => RoleManager::get_admin_roles($mask),
+        ];
     }
 
 

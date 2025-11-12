@@ -53,6 +53,14 @@
                                         <a href="#" class="dropdown-item">Proposer Un trajet</a>
                                     </li>
                                 <?php endif; ?>
+                                <?php if ($currentUser['adminInfo']['name'] === "Administrateur") : ?>
+                                    <li>
+                                        <a href="#" class="dropdown-item">Ajouter Un nouvel Employe</a>
+                                    </li>
+                                    <li>
+                                        <a href="#" class="dropdown-item">Tableau de Bord</a>
+                                    </li>
+                                <?php endif; ?>
                                 <li>
                                     <a href="<?= url('/logout') ?>" class="dropdown-item text-danger">Deconnexion</a>
                                 </li>

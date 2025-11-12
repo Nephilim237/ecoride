@@ -22,6 +22,9 @@ class UserController extends Controller
     public function profile(): void
     {
 
+        dump($this->userModel->has_role($this->service->get_connected_user_id(), 'administrateur'));
+
+
         $this->renderView('profile/profile', [
             'title' => "Profil de Coding237 | EcoRide",
         ]);
