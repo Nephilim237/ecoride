@@ -27,7 +27,7 @@
             <div class="col-md-9 col-sm-12">
                 <div class="row ms-5 mb-3 outfit">
                     <div class="col-md-8 col-sm-12">
-                        <h3>A propos de <?= sanitize($user->pseudo ?? null) ?></h3>
+                        <h3>A propos de <?= sanitize($user->prenom ?? $user->pseudo ?? null) ?></h3>
                         <h6 class="er-text-green fst-italic">(
                             <?= $isDriver ? 'Chauffeur | ' : '' ?>
                             <?= $isPassenger ? 'Passager' : '' ?>
@@ -58,15 +58,13 @@
                                 </a>
                             <?php endif; ?>
                             <?php if (!$isDriver): ?>
-                                <a href="#" class="btn btn-bg-green-2 rounded-pill me-1 px-4 fw-400">
+                                <a href="<?= url('become-partner') ?>" class="btn btn-bg-green-2 rounded-pill me-1 px-4 fw-400">
                                     Devenir Partenaire
                                 </a>
                             <?php endif; ?>
-                            <?php if ($isPassenger): ?>
-                                <a href="#" class="btn btn-bg-green-2 rounded-pill me-1 px-4 fw-400">
-                                    Touver un covoiturage
-                                </a>
-                            <?php endif; ?>
+                            <a href="#" class="btn btn-bg-green-2 rounded-pill me-1 px-4 fw-400">
+                                Touver un covoiturage
+                            </a>
                         </div>
                     </div>
                     <div class="col-md-4 col-sm-12">
@@ -104,5 +102,3 @@
         </div>
     </div>
 </section>
-
-<?php //dump($currentUser) ?>

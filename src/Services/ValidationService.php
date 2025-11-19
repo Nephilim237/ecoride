@@ -2,10 +2,12 @@
 
 namespace Ecoride\Ecoride\Services;
 
-class ValidationService
-{
+use Ecoride\Ecoride\Core\Service;
 
-    private array $errors = [];
+class ValidationService extends Service
+{
+    protected array $errors = [];
+
 
     public function validate_required(string $field, mixed $value): bool
     {
@@ -18,7 +20,7 @@ class ValidationService
         return true;
     }
 
-    public function validate_email(string $field, mixed $value)
+    public function validate_email(string $field, mixed $value): bool
     {
         if (!empty($value) && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
             $this->errors[$field] = "l'adresse email n'est pas valide.";
@@ -28,7 +30,7 @@ class ValidationService
         return true;
     }
 
-    public function validate_max(string $field, $value, $max)
+    public function validate_max(string $field, $value, $max): bool
     {
         if (!empty($value) && mb_strlen($value) > $max) {
             $this->errors[$field] = "Le champ $field doit contenir au plus $max caracteres.";
@@ -38,7 +40,7 @@ class ValidationService
         return true;
     }
 
-    public function validate_min(string $field, $value, $min)
+    public function validate_min(string $field, $value, $min): bool
     {
         if (!empty($value) && mb_strlen($value) < $min) {
             $this->errors[$field] = "Le champ $field doit contenir au plus $min caracteres.";
@@ -48,7 +50,7 @@ class ValidationService
         return true;
     }
 
-    public function validate_numeric(string $field, $value)
+    public function validate_numeric(string $field, $value): bool
     {
         if (!empty($value) && !is_numeric($value)) {
             $this->errors[$field] = "Le champ $field doit etre une valeur numerique.";
@@ -58,7 +60,8 @@ class ValidationService
         return true;
     }
 
-    public function validate_date($field, $value) {
+    public function validate_date($field, $value): bool
+    {
         if (!empty($value)) {
             $date = \DateTime::createFromFormat('Y-m-d', $value);
             if (!$date && $date->format('Y-m-d') !== $value) {
@@ -73,7 +76,8 @@ class ValidationService
     /**
      * @throws \Exception
      */
-    public function validate_adult(string $field, $value) {
+    public function validate_adult(string $field, $value): bool
+    {
         if (!empty($value)) {
             $birthdate = new \DateTime($value);
             $today = new \DateTime();
@@ -88,7 +92,8 @@ class ValidationService
         return true;
     }
 
-    public function validate_phone($field, $value) {
+    public function validate_phone($field, $value): bool
+    {
         if (!empty($value)) {
             $value = preg_replace('/[ .-]/', '', $value); // +33 3 03 69 74 12 => +33303697412
             if (!preg_match('/^(0|\+33|0033)[1-9]([0-9]{2}){4}$/', $value)) {
@@ -100,7 +105,8 @@ class ValidationService
         return true;
     }
 
-    public function validate_license_plate($field, $value) {
+    public function validate_license_plate($field, $value): bool
+    {
         if (!empty($value)) {
             $value = strtoupper(preg_replace('/[ .-]/', '', $value));
             if (!preg_match('/^[A-HJ-NP-TV-Z]{2}\d{3}[A-HJ-NP-TV-Z]{2}$/', $value)) {
@@ -112,7 +118,8 @@ class ValidationService
         return true;
     }
 
-    public function validate_unique($field, $value, $table, $column = null, $exceptedId = null) {
+    public function validate_unique($field, $value, $table, $column = null, $exceptedId = null): bool
+    {
         if (!empty($value)) {
             $column = $column ?? $field;
             $db = \Ecoride\Ecoride\Core\Database::getInstance()->getConnection();

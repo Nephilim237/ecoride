@@ -2,23 +2,29 @@
 
 namespace Ecoride\Ecoride\Controllers;
 
+use Ecoride\Ecoride\Core\Database;
 use Ecoride\Ecoride\Core\Controller;
-use Ecoride\Ecoride\Core\Session;
-use Ecoride\Ecoride\Services\AuthService;
 
 class AuthController extends Controller
 {
+    public function __construct()
+    {
+        parent::__construct();
+    }
+
     public function handle_register(): void
     {
+        $this->service->require_guest();
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/login');
         }
 
         $userData = [
-            'pseudo' => htmlspecialchars($_POST['pseudo']) ?? '',
-            'email' => htmlspecialchars($_POST['email']) ?? '',
-            'password' => htmlspecialchars($_POST['password']) ?? '',
-            'password_confirm' => htmlspecialchars($_POST['password_confirm']) ?? '',
+            'pseudo' => sanitize($_POST['pseudo']) ?? '',
+            'email' => sanitize($_POST['email']) ?? '',
+            'password' => sanitize($_POST['password']) ?? '',
+            'password_confirm' => sanitize($_POST['password_confirm']) ?? '',
             'credits' => 20
         ];
 
@@ -37,6 +43,20 @@ class AuthController extends Controller
         unset($userData['password_confirm']);
 
         if ($this->auth->register($userData)) {
+            $connexion = Database::getInstance()->getConnection();
+            $stmt = $connexion->prepare("SELECT user_id FROM user WHERE email = ?");
+            $stmt->execute([sanitize($_POST['email'])]);
+            $result = $stmt->fetch();
+            if (!$result) {
+                $this->session->set_flash('error', "Role Passager non attribue!");
+            }
+
+            $userId = $result->user_id;
+            $passengerStmt = $connexion->prepare("
+                INSERT INTO role_user (user_id, role_id) SELECT ?, role_id FROM role WHERE libelle = 'passager'
+            ");
+            $passengerStmt->execute([$userId]);
+
             $this->session->set_flash('success', "Inscription reussie!");
             $this->redirect('/login');
         } else {
@@ -46,6 +66,7 @@ class AuthController extends Controller
 
     public function register(): void
     {
+        $this->service->require_guest();
         $this->renderView('auth/register', [
             'title' => "Inscription | " . APP_NAME
         ]);
@@ -53,6 +74,7 @@ class AuthController extends Controller
 
     public function login(): void
     {
+        $this->service->require_guest();
         $this->renderView('auth/login', [
             'title' => "Inscription | " . APP_NAME
         ]);
@@ -60,6 +82,7 @@ class AuthController extends Controller
 
     public function handle_login(): void
     {
+        $this->service->require_guest();
         // Si la page n'est pas accedee en POST, on redirige, il y a violation de protocol
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/login');
@@ -84,12 +107,11 @@ class AuthController extends Controller
             // Sinon, on redirige vers le formulaires de connexion avec les erreurs
             $this->session->set_flash('error', 'Pseudo ou mot de passe incorrect.');
             $this->redirect('/login');
-
         }
     }
 
     public function logout(): void
     {
-        $this->auth->logout();
+        $this->service->logout();
     }
 }

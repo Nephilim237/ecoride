@@ -41,6 +41,8 @@ try {
         ->get('/login', 'AuthController@login')
         ->post('/login/handle', 'AuthController@handle_login')
         ->get('/profile', 'UserController@profile')
+        ->get('/become-partner', 'PartnerController@become_partner')
+        ->post('/become-partner/handle', 'PartnerController@handle_become_partner')
         ->get('/logout', 'AuthController@logout');
 
 //$router->get('/trajets/recherche', 'RideController@search');

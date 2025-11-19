@@ -3,8 +3,8 @@
 namespace Ecoride\Ecoride\Core;
 
 use Ecoride\Ecoride\Models\UserModel;
+use Ecoride\Ecoride\Models\VehicleModel;
 use Ecoride\Ecoride\Services\AuthService;
-use http\Client\Curl\User;
 
 class Controller
 {
@@ -12,6 +12,7 @@ class Controller
     protected AuthService $auth;
     protected Service $service;
     protected UserModel $userModel;
+    protected VehicleModel $vehicleModel;
 
     public function __construct()
     {
@@ -19,6 +20,7 @@ class Controller
         $this->auth = new AuthService();
         $this->service = new Service();
         $this->userModel = new UserModel();
+        $this->vehicleModel = new VehicleModel();
     }
 
     public function redirect(string $path, array $params = []): void
