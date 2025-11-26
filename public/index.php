@@ -43,7 +43,11 @@ try {
         ->get('/profile', 'UserController@profile')
         ->get('/become-partner', 'PartnerController@become_partner')
         ->post('/become-partner/handle', 'PartnerController@handle_become_partner')
-        ->get('/logout', 'AuthController@logout');
+        ->get('/logout', 'AuthController@logout')
+        ->get('/add-car', 'VehicleController@add_car')
+        ->post('/add-car/handle', 'VehicleController@handle_add_car')
+        ->post('add-preference/handle', 'UserController@handle_add_preference')
+    ;
 
 //$router->get('/trajets/recherche', 'RideController@search');
 //$router->get('/trajets', 'RideController@index');
@@ -51,7 +55,7 @@ try {
 //$router->get('/profil', 'UserController@profile');
 
     $router->dispatch();
-} catch(Throwable $e) {
+} catch (Throwable $e) {
     if ($environment === 'developement') {
         throw $e;
     } else {
