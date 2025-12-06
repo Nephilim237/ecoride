@@ -9,7 +9,6 @@ class Service
 {
     protected Session $session;
     protected UserModel $userModel;
-
     protected VehicleModel $vehicleModel;
 
     public function __construct()

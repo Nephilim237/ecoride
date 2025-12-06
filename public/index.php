@@ -47,6 +47,9 @@ try {
         ->get('/add-car', 'VehicleController@add_car')
         ->post('/add-car/handle', 'VehicleController@handle_add_car')
         ->post('add-preference/handle', 'UserController@handle_add_preference')
+        ->get('/carpool', 'CarpoolController@index')
+        ->get('/carpool/search', 'CarpoolController@search')
+        ->get('/carpool/autocomplete', 'CarpoolController@autocomplete')
     ;
 
 //$router->get('/trajets/recherche', 'RideController@search');

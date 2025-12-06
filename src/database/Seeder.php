@@ -317,7 +317,7 @@ class Seeder
             $nbCovoiturages = $this->faker->numberBetween(0, 10);
             for ($i = 0; $i < $nbCovoiturages; $i++) {
                 $dateDepart = $this->faker
-                    ->dateTimeBetween('+1 days', '+1 months'); // Un DateTime est objet
+                    ->dateTimeBetween('+1 days', '+3 months'); // Un DateTime est objet
                 $heureDepart = $this->faker->time('H:i:s');
                 $dureeTrajet = $this->faker->numberBetween(60, 240);
                 $lieuDepart = $this->faker->randomElement($villesFrance);
