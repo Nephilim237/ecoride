@@ -17,12 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            console.log(`${autocompleteUrl.value}?query=${encodeURIComponent(query)}`);
+            // console.log(`${autocompleteUrl.value}?query=${encodeURIComponent(query)}`);
             timeoutId = setTimeout(function () {
                 fetch(`${autocompleteUrl.value}?query=${encodeURIComponent(query)}`)
                     .then(response => response.json())
                     .then(addresses => {
-                        console.log(addresses);
+                        // console.log(addresses);
                         displayResults(addresses, resultsContainer, input);
                     })
                     .catch((error) => {
@@ -74,5 +74,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const now = new Date();
         // console.log(now.toISOString());
         dateInput.value = now.toISOString().split('T')[0];
+    }
+
+    /*===== Reservation covoiturage prochiane date suggeree =======*/
+    const nextCarpool = document.getElementById('next-carpool');
+    const nextDateField = document.getElementById('next-date');
+    // console.log(nextDateField.value);
+    if (nextCarpool) {
+        nextCarpool.addEventListener('click', () => {
+            dateInput.value = nextDateField.value;
+            document.getElementById('search-form').submit();
+        })
     }
 });

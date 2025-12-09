@@ -61,7 +61,7 @@ class CarpoolModel extends Model
 
         // 3. Si la date de depart est fournie
         if (!empty($searchParams['date_depart'])) {
-            $conditions[] = " c.date_depart >= :date_depart";
+            $conditions[] = " c.date_depart = :date_depart";
             $params['date_depart'] = "{$searchParams['date_depart']}";
         }
 
@@ -126,6 +126,41 @@ class CarpoolModel extends Model
             return [];
         }
 
+    }
+
+    public function get_next_available_date(string $start, string $end, $date) {
+        $query = "
+            SELECT  MIN(c.date_depart) as prochaine_date
+            FROM covoiturage c
+            LEFT JOIN (
+                SELECT covoiturage_id, SUM(nb_place_reservee) as places_reservees
+                FROM reservation
+                WHERE statut = 'confirme'
+                GROUP BY covoiturage_id
+            ) r ON c.covoiturage_id = r.covoiturage_id
+            WHERE c.statut = 'prevu'
+            AND (c.nb_places - IFNULL(places_reservees, 0)) > 0
+            AND c.lieu_depart LIKE ?
+            AND c.lieu_arrivee LIKE ?
+            AND c.date_depart >= ?
+            -- ORDER BY c.date_depart
+            LIMIT 1
+        ";
+
+        try {
+            $stmt = $this->connection->prepare($query);
+            $stmt->execute([
+               "%$start%",
+               "%$end%",
+               $date
+            ]);
+
+            $result = $stmt->fetch();
+            return $result ? $result->prochaine_date : null;
+        } catch (\PDOException $e) {
+            error_log("Erreur rechercher procahine date: {$e->getMessage()}");
+            return null;
+        }
     }
 
 }

@@ -65,9 +65,9 @@ class Controller
         $viewData = array_merge($globalData, $data);
 
         extract($viewData);
-        require __DIR__ . "/../Views/partials/header.php";
+        require_once __DIR__ . "/../Views/partials/header.php";
         require __DIR__ . "/../Views/{$view}.php";
-        require __DIR__ . "/../Views/partials/footer.php";
+        require_once __DIR__ . "/../Views/partials/footer.php";
     }
 
     protected function json($data, $statusCode = 200): void
