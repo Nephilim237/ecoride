@@ -71,55 +71,60 @@ class UserModel extends Model
         return $stmt->execute([$userId]);
     }
 
+    public function get_or_create_preference(string $preference) {
+        // Si la preference existe, on recupere son identifiant pour faire la mise a jour de l'utiliateur
+        $stmt = $this->connection->prepare("SELECT preference_id FROM preference WHERE preference = ?");
+        $stmt->execute([$preference]);
+        $result = $stmt->fetch();
+
+        if ($result) return $result->preference_id;
+
+        // Si la preference n'existe pas, on la creee et on renvoie son identifiant poru la mise a jour des
+        // preferences utilisateurs
+        $stmt = $this->connection->prepare("INSERT INTO preference (preference) VALUES (?)");
+        $stmt->execute([strtolower($preference)]);
+
+        return $this->connection->lastInsertId();
+    }
+
     public function save_preferences_with_mysql(int $userId, array $preferences): true
     {
-        $stmt = $this->connection->prepare(" INSERT INTO preference (propriete, valeur, conducteur_id) VALUES (?,?,?)");
+        $stmt = $this->connection->prepare(" INSERT INTO preference_user (user_id, preference_id, valeur_preference) VALUES (?,?,?)");
+        // ['manger' => 'oui'];
         foreach ($preferences as $key => $value) {
-            $stmt->execute([$key, $value, $userId]);
+            $preferenceId = $this->get_or_create_preference($key);
+            $stmt->execute([$userId, $preferenceId, $value]);
         }
 
         return true;
     }
 
-    public function save_prefrences_with_mongoDB(int $userId, array $preferences): void
+    public function save_prefrences_with_mongoDB(string $userId, array $preferences): void
     {
         $mongoConnexion = MongoManager::getInstance();
         $collection = $mongoConnexion->getCollection('preferences');
 
-        $document = [
-            'user_id' => $userId,
-            'preferences' => $preferences,
-            'updates_at' => new UTCDateTime()
-        ];
+        // Recuperer les preferences actuelles
+        $old = $collection->findOne(['user_id' => $userId]);
+        $oldPreferences  = (array)$old['preferences'] ?? [];
+
+        // Fusionner les anciennes et nouvelles preferences
+        $mergedPreferences = array_merge($oldPreferences, $preferences);
 
         // Ajout des preferences
         $collection->updateOne(
             ['user_id' => $userId],
-            ['$set' => $document],
+            [
+                '$set' => [
+                    'preferences' => $mergedPreferences,
+                    'updates_at' => new UTCDateTime()
+                ]
+            ],
             ['upsert' => true]
         );
     }
 
-    public function update_prefrences_with_mongoDB(int $userId, array $preferences): void
-    {
-        $mongoConnexion = MongoManager::getInstance();
-        $collection = $mongoConnexion->getCollection('preferences');
-
-        $document = [
-            'user_id' => $userId,
-            'preferences' => $preferences,
-            'updates_at' => new UTCDateTime()
-        ];
-
-        // Ajout des preferences
-        $collection->findOneAndUpdate(
-            ['user_id' => $userId],
-            ['$set' => $document],
-            ['upsert' => true]
-        );
-    }
-
-    public function get_preferences(int $userId): array
+    public function get_preferences(string $userId): array
     {
         $mongoConnexion = MongoManager::getInstance();
         $collection = $mongoConnexion->getCollection('preferences');
@@ -127,6 +132,22 @@ class UserModel extends Model
         $preferences = $collection->findOne(['user_id' => $userId]);
 
         return $preferences ? (array) $preferences['preferences'] : [];
+    }
+
+    public function get_preferences_with_mysql(int $userId): false|array
+    {
+        $query = "
+            SELECT p.preference_id, p.preference, pu.valeur_preference, pu.user_id
+            FROM preference p 
+            JOIN preference_user pu on p.preference_id = pu.preference_id
+            WHERE pu.user_id = ?
+            ORDER BY pu.user_id
+        ";
+
+        $stmt = $this->connection->prepare($query);
+        $stmt->execute([$userId]);
+
+        return $stmt->fetchAll();
     }
 
     public function email_exist(string $email, ?int $excludeUserId = null): bool

@@ -33,7 +33,8 @@ class Service
             'date_creation' => $user->date_creation ?? null,
             'voitures' => $userVehicles,
             'nombreVoitures' => count($userVehicles),
-            'preferences' => $this->userModel->get_preferences($user->user_id),
+            'mongoPreferences' => $this->userModel->get_preferences($user->user_id),
+            'sqlPreferences' => $this->userModel->get_preferences_with_mysql($user->user_id),
             'roles' => [
                 $this->userModel->is_driver($user->user_id) ? 'chauffeur' : null,
                 $this->userModel->is_passenger($user->user_id) ? 'passager' : null

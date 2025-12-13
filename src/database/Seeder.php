@@ -5,6 +5,7 @@ namespace Ecoride\Ecoride\database;
 use Ecoride\Ecoride\Core\Database;
 use Ecoride\Ecoride\Core\MongoManager;
 use Faker\Factory;
+use MongoDB\BSON\UTCDateTime;
 
 class Seeder
 {
@@ -12,7 +13,6 @@ class Seeder
     private \PDO $db;
     private ?MongoManager $mongo;
     private \Faker\Generator $faker;
-    private array $marqueIds;
     private array $userIds;
     private array $voitureIds;
 
@@ -34,6 +34,8 @@ class Seeder
         echo "📌 Debut de la generation des donnees tests... \n\n";
 
         $this->clearExistingData();
+        $this->seedRoles();
+        $this->seedPreferences();
         $this->seedMarques();
         $this->seedUsers();
         $this->seedVoitures();
@@ -41,8 +43,8 @@ class Seeder
         $this->seedCovoiturages();
         $this->seedReservations();
         $this->seedAvis();
-        $this->seedPreferences();
-//        $this->seedMongoData();
+        $this->seedPreferencesUser();
+        $this->seedPreferencesUserWithMysql();
 
         echo "✅ generation des tests terminee avec succes ! \n";
     }
@@ -55,8 +57,8 @@ class Seeder
         $this->db->exec("SET FOREIGN_KEY_CHECKS = 0");
 
         $tables = [
-            'preference', 'avis', 'reservation', 'covoiturage', 'voiture',
-            'role_user', 'user', 'marque', 'role_admin'
+            'avis', 'covoiturage', 'marque', 'preference', 'preference_user',
+            'reservation', 'role', 'role_user', 'user', 'voiture'
         ];
 
         foreach ($tables as $table) {
@@ -67,12 +69,22 @@ class Seeder
         $this->db->exec("SET FOREIGN_KEY_CHECKS = 1");
 
         //Nettoyer MongoDB
-        $this->mongo->getCollection('trajets_geolocalisation')->deleteMany([]);
+        $this->mongo->getCollection('preferences')->deleteMany([]);
 
         echo "✅ Donnees nettoyees. \n";
     }
 
-    private function seedMarques()
+    private function seedRoles(): void
+    {
+        $this->db->query("INSERT INTO role (libelle) VALUES ('chauffeur'), ('passager')");
+    }
+
+    private function seedPreferences(): void
+    {
+        $this->db->query("INSERT INTO preference (preference) VALUES ('animaux'), ('fumeurs')");
+    }
+
+    private function seedMarques(): void
     {
         echo "🚘 Creation des marques de voiture...\n";
 
@@ -82,10 +94,9 @@ class Seeder
             'Fiat', 'Opel', 'Volvo', 'Seat', 'Skoda', 'Mazda', 'Honda', 'Suzuki'
         ];
 
+        $stmt = $this->db->prepare("INSERT INTO marque (libelle) VALUES (:libelle)");
         foreach ($marques as $marque) {
-            $stmt = $this->db->prepare("INSERT INTO marque (libelle) VALUES (:libelle)");
             $stmt->execute(['libelle' => $marque]);
-            $this->marqueIds[] = $this->db->lastInsertId();
         }
 
         echo "✅ " . count($marques) . " marques creees ...\n";
@@ -119,6 +130,10 @@ class Seeder
         //$modelesParMarque[$marque->libelle] => $modelesParMarque['citroen']
         //]
 
+        $voitureStmt = $this->db->prepare("
+            INSERT INTO voiture (modele, immatriculation, couleur, energie, nb_places, date_premiere_immatriculation, user_id, marque_id) 
+            VALUES (:modele, :immatriculation, :couleur, :energie, :nb_places, :date_premiere_immatriculation, :user_id, :marque_id)
+        ");
         $countVoiture = 0;
         foreach ($this->userIds as $userId) {
             $marque = $this->faker->randomElement($marques);
@@ -137,12 +152,7 @@ class Seeder
                     'user_id' => $userId,
                     'marque_id' => $marque->marque_id
                 ];
-
-                $stmt = $this->db->prepare("INSERT INTO voiture (
-                     modele, immatriculation, couleur, energie, nb_places, date_premiere_immatriculation, user_id, marque_id) VALUES (
-                    :modele, :immatriculation, :couleur, :energie, :nb_places, :date_premiere_immatriculation, :user_id, :marque_id
-                     )");
-                $stmt->execute($infoVoiture);
+                $voitureStmt->execute($infoVoiture);
                 $this->voitureIds[] = $this->db->lastInsertId();
                 $countVoiture++;
             }
@@ -165,6 +175,31 @@ class Seeder
     {
         echo "👥 Creation des utilisateurs...\n";
 
+        $stmt = $this->db->prepare(
+            "INSERT INTO user (
+                  nom, prenom, email, role_admin, password, telephone, 
+                  adresse, pseudo, credits, date_naissance, photo, date_creation) VALUES (
+                  :nom, :prenom, :email, :role_admin, :password, :telephone, 
+                  :adresse, :pseudo, :credits, :date_naissance, :photo, :date_creation)"
+        );
+        $adminData = [
+            'nom' => 'Coding',
+            'prenom' => 'City',
+            'email' => 'codingcity237@gmail.com',
+            'role_admin' => 15, // RoleMask a 15 pour admin
+            'password' => password_hash('1234567890', PASSWORD_DEFAULT),
+            'telephone' => $this->faker->phoneNumber,
+            'adresse' => $this->faker->address,
+            'pseudo' => 'codingcity237',
+            'credits' => 20,
+            'date_naissance' => $this->faker->dateTime('-25 years')->format('Y-m-d'),
+            'photo' => '',
+            'date_creation' => $this->faker->dateTimeThisYear()->format('Y-m-d')
+        ];
+        $stmt->execute($adminData);
+        $this->userIds[] = $this->db->lastInsertId();
+
+
         for ($i = 0; $i < 50; $i++) {
             $prenom = $this->faker->firstName;
             $nom = $this->faker->lastName;
@@ -172,23 +207,17 @@ class Seeder
                 'nom' => $nom,
                 'prenom' => $prenom,
                 'email' => $this->faker->email,
-                'role_admin' => $this->faker->randomElement([1, 3, 7, 15]), //VISITEUR 1, UTILIASTEUR 2  1 | 2  A | B = A+B 1 => 0001, 2 => 0010
+                'role_admin' => $this->faker->randomElement([1, 3, 7]), //VISITEUR 1, UTILIASTEUR 2  1 | 2  A | B = A+B 1 => 0001, 2 => 0010
                 'password' => password_hash('1234567890', PASSWORD_DEFAULT),
                 'telephone' => $this->faker->phoneNumber,
                 'adresse' => $this->faker->address,
                 'pseudo' => $this->generateUniquePseudo($prenom, $nom), // A creer
                 'credits' => 20,
                 'date_naissance' => $this->faker->dateTimeBetween('-100 years', '-18 years')->format('Y-m-d'),
-                'photo' => $this->faker->optional(0.75)->imageUrl(200, 200, 'people', true, $prenom),
+                'photo' => 'https://randomuser.me/api/portraits/' . $this->faker->randomElement(['men', 'women']) . '/' .
+                    $this->faker->numberBetween(1, 90) . '.jpg', //https://randomuser.me/portraits/men/2.jpg
                 'date_creation' => $this->faker->dateTimeBetween('-1 years')->format('Y-m-d')
             ];
-            $stmt = $this->db->prepare(
-                "INSERT INTO user (
-                  nom, prenom, email, role_admin, password, telephone, 
-                  adresse, pseudo, credits, date_naissance, photo, date_creation) VALUES (
-                  :nom, :prenom, :email, :role_admin, :password, :telephone, 
-                  :adresse, :pseudo, :credits, :date_naissance, :photo, :date_creation)"
-            );
             $stmt->execute($userData);
             $this->userIds[] = $this->db->lastInsertId();
         }
@@ -237,17 +266,17 @@ class Seeder
             $hasCar = $this->userHasCar($userId);
 
             if ($hasCar) {
-                $this->assignRole($userId, 2); // A creer
+                $this->assignRole($userId, 1); // A creer
 
                 // 70% des Chauffeurs sont aussi des passagers
                 if ($this->faker->boolean(70)) {
-                    $this->assignRole($userId, 1);
+                    $this->assignRole($userId, 2);
                     $stats['role_chauffeur_passager']++;
                 } else {
                     $stats['role_chauffeur']++;
                 }
             } else {
-                $this->assignRole($userId, 1);
+                $this->assignRole($userId, 2);
                 $stats['role_passager']++;
             }
         }
@@ -278,7 +307,7 @@ class Seeder
         } catch (\PDOException $e) {
             // Ignorer les doublons
             if ($e->getCode() === '23000') {// Violation de contrainte d'unicite
-                echo " Role deja assigne: Utilisateur: $userId - Role: $role \n";
+                echo " Role deja assigne: Utilisateur: $userId - Role: $roleId \n";
                 return;
             } else {
                 throw $e;
@@ -317,9 +346,9 @@ class Seeder
             $nbCovoiturages = $this->faker->numberBetween(0, 10);
             for ($i = 0; $i < $nbCovoiturages; $i++) {
                 $dateDepart = $this->faker
-                    ->dateTimeBetween('+1 days', '+3 months'); // Un DateTime est objet
+                    ->dateTimeBetween('+1 days', '+6 months'); // Un DateTime est objet
                 $heureDepart = $this->faker->time('H:i:s');
-                $dureeTrajet = $this->faker->numberBetween(60, 240);
+                $dureeTrajet = $this->faker->numberBetween(60, 360);
                 $lieuDepart = $this->faker->randomElement($villesFrance);
                 $lieuArrivee = $this->faker->randomElement(array_diff($villesFrance, [$lieuDepart]));
 
@@ -331,11 +360,11 @@ class Seeder
                     'heure_arrivee' => $this->generateArrivalTime($dateDepart, $dureeTrajet), // A creer
                     'lieu_arrivee' => $lieuArrivee,
                     'statut' => $this->faker->randomElement(['prevu', 'annule', 'en cours', 'termine', 'prevu', 'prevu']),
-                    'nb_places' => $this->faker->numberBetween(1, 30),
-                    'prix_personne' => $this->faker->numberBetween(5, 50),
+                    'nb_places' => $this->faker->numberBetween(1, 60),
+                    'prix_personne' => $this->faker->numberBetween(5, 190),
                     'conducteur_id' => $conducteurId,
                     'voiture_id' => $voitureId,
-                    'date_creation' => $this->faker->dateTimeBetween('-1 months', '-1 weeks')->format('Y-m-d')
+                    'date_creation' => $this->faker->dateTimeBetween('-1 months')->format('Y-m-d')
                 ];
                 $stmt = $this->db
                     ->prepare(
@@ -363,7 +392,7 @@ class Seeder
         return $arrival->format('H:i:s');
     }
 
-    private function seedReservations()
+    private function seedReservations(): void
     {
         echo "📖 Creation des reservations...\n";
         $countReservation = 0;
@@ -414,7 +443,7 @@ class Seeder
         echo "✅ $countReservation reservations creees.\n";
     }
 
-    private function seedAvis()
+    private function seedAvis(): void
     {
         echo "⭐ Creation des avis...\n";
         // Un avis ne peut etre donne que lorsqu'un covoiturage est termine,
@@ -433,7 +462,7 @@ class Seeder
             if ($this->faker->boolean(60)) {
 
                 $infoAvis = [
-                    'commentaire' => $this->faker->optional(0.8)->realText($this->faker->numberBetween(50, 1000)),
+                    'commentaire' => $this->faker->optional(0.8)->realText($this->faker->numberBetween(50, 300)),
                     'note' => $this->faker->numberBetween(1, 5),
                     'statut' => $this->faker->randomElement(['publie', 'modere', 'modere', 'modere']),
                     'passager_id' => $reservation->passager_id,
@@ -454,39 +483,65 @@ class Seeder
         echo "✅ $countAvis avis crees.\n";
     }
 
-    private function seedPreferences(): void
+    private function seedPreferencesUser(): void
     {
-        echo "⚙️ Creations des preferences utilisateurs...\n";
+        echo "⚙️ Creations des preferences utilisateurs dans MongoDB...\n";
+
+        $collection = $this->mongo->getCollection('preferences');
 
         $countPreference = 0;
+
         foreach ($this->userIds as $userId) {
-            // Verifier si l'utilisateur est un chauffeur
-            $stmt = $this->db->prepare("SELECT role_id FROM role_user WHERE user_id = ? AND role_id = 2");
-            $stmt->execute([$userId]);
+            $hasCar = $this->userHasCar($userId);
 
-            $result = $stmt->fetch();
-
-            if ($result) {
-                $preferences = [
-                    ['propriete' => 'Musique autorisee', 'valeur' => 'non'],
-                    ['propriete' => 'Animaux autorises', 'valeur' => 'non'],
+            if ($hasCar) {
+                $document = [
+                    'user_id' => $userId,
+                    'preferences' => [
+                        'animaux' => $this->faker->randomElement(['oui', 'non']),
+                        'fumeurs' => $this->faker->randomElement(['oui', 'non']),
+                    ],
+                    'updates_at' => new UTCDateTime()
                 ];
 
-                foreach ($preferences as $preference) {
-                    $stmt = $this->db->prepare(
-                        "INSERT INTO preference (propriete, valeur, conducteur_id) VALUES (?, ?, ?)"
-                    );
-                    $stmt->execute([$preference['propriete'], $preference['valeur'], $userId]);
-                    $countPreference++;
-                }
+                // Ajout des preference
+                $collection->updateOne(
+                    ['user_id' => $userId],
+                    ['$set' => $document],
+                    ['upsert' => true]
+                );
             }
+
+            $countPreference++;
         }
         echo "✅ $countPreference preferences creees.\n";
     }
 
-//    private function seedMongoData()
-//    {
-//
-//    }
+    private function seedPreferencesUserWithMysql(): void
+    {
+        echo " Creation des parametres utilisateurs ... \n";
+        $countParametre = 0;
+        foreach ($this->userIds as $userId) {
+            $hasCar  = $this->userHasCar($userId);
+
+            if ($hasCar) {
+                $stmt = $this->db->prepare("INSERT INTO preference_user (user_id, preference_id, valeur_preference) VALUES (?,?,?)");
+                $stmt->execute([
+                    $userId,
+                    1,
+                    $this->faker->randomElement(['oui', 'non'])
+                ]);
+                $stmt->execute([
+                    $userId,
+                    2,
+                    $this->faker->randomElement(['oui', 'non'])
+                ]);
+            }
+
+            $countParametre++;
+        }
+
+        echo "✅ $countParametre preferences creees ... \n";
+    }
 
 }

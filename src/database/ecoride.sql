@@ -90,7 +90,7 @@ CREATE TABLE reservation
 (
     passager_id       INT NOT NULL,
     covoiturage_id    INT NOT NULL,
-    statut            ENUM ('en attente', 'confirme', 'annule'),
+    statut            ENUM ('en attente', 'confirme', 'annule') DEFAULT 'en attente',
     nb_place_reservee INT NOT NULL,
     date_creation     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (passager_id, covoiturage_id),
@@ -119,15 +119,27 @@ CREATE TABLE avis
 CREATE TABLE preference
 (
     preference_id INT PRIMARY KEY AUTO_INCREMENT,
-    propriete     VARCHAR(64) NOT NULL,
-    valeur        VARCHAR(64) NOT NULL,
-    conducteur_id INT         NOT NULL,
-    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (conducteur_id) REFERENCES user (user_id),
-    UNIQUE KEY unique_conducteur_proprietaire (conducteur_id, propriete)
+    preference     VARCHAR(64) NOT NULL,
+    UNIQUE KEY unique_preference (preference)
 );
+
+CREATE TABLE preference_user
+(
+    user_id INT,
+    preference_id INT,
+    valeur_preference ENUM('oui', 'non') DEFAULT 'non',
+    PRIMARY KEY (user_id, preference_id),
+    FOREIGN KEY (user_id) REFERENCES user (user_id),
+    FOREIGN KEY (preference_id) REFERENCES preference (preference_id)
+);
+
+
 -- Insertion des role en BD
 
 INSERT INTO role (libelle)
 VALUES ('passager'),
        ('chauffeur');
+
+INSERT INTO preference (preference)
+VALUES ('animaux'),
+       ('fumeurs');
