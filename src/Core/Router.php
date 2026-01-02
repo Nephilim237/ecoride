@@ -21,10 +21,14 @@ class Router
     public function dispatch() {
         $url = $_GET['url'] ?? '';
         $method = $_SERVER['REQUEST_METHOD'];
+        $params = [];
+        foreach ($_GET as $key => $value) {
+            $params[$key] = filter_input(INPUT_GET, $key, FILTER_SANITIZE_SPECIAL_CHARS);
+        }
 
         foreach($this->routes[$method] as $path => $callback) {
             if ($this->matchRoute($path, $url)) {
-                return $this->executeCallback($callback);
+                return $this->executeCallback($callback, $params);
             }
         }
 
@@ -39,11 +43,13 @@ class Router
         return $route === $url;
     }
 
-    private function executeCallback($callback) {
+    private function executeCallback($callback, array $params = []) {
+        if (is_callable($callback)) {
+            return call_user_func($callback, $params);
+        }
+
         if(is_string($callback)) {
-            list($controllerName, $method) = explode('@', $callback); //RideController@search
-            $controllerName = 'Ridecontroller';
-            $method = 'search';
+            list($controllerName, $method) = explode('@', $callback); //['RideController', 'search']
             $controller = "Ecoride\\Ecoride\\Controllers\\$controllerName";
 
             if(class_exists($controller)) {

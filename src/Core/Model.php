@@ -30,8 +30,8 @@ abstract class Model
 
     public function create(array $data): bool
     {
-        $columns = implode(', ', array_keys($data));
-        $placeholders = ':' .implode(', :', array_keys($data));
+        $columns = implode(', ', array_keys($data)); // " marque_id, modele, couleur, immatriculation ..."
+        $placeholders = ':' .implode(', :', array_keys($data)); // ":marque_id, :modele, :couleur ..."
 
         $stmt = $this->connection->prepare("INSERT INTO {$this->table} ($columns) VALUES ($placeholders)");
         return $stmt->execute($data);
@@ -48,6 +48,20 @@ abstract class Model
     {
         $collection = $this->mongo->getCollection($collection);
         return $collection->find($filter);
+    }
+
+
+    public function get_notices() {
+        $stmt = $this->connection->query("
+            SELECT a.*, u.photo, u.nom, u.prenom
+            FROM avis a
+            JOIN user u ON a.passager_id = u.user_id
+            WHERE statut = 'publie' AND note >= '3.0'
+            ORDER BY date_creation DESC
+            LIMIT 12
+        ");
+
+        return $stmt->fetchAll();
     }
 
 }
