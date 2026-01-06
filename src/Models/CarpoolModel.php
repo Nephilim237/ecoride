@@ -6,9 +6,12 @@ use Ecoride\Ecoride\Core\Model;
 
 class CarpoolModel extends Model
 {
+
+    private UserModel $userModel;
     public function __construct()
     {
         parent::__construct();
+        $this->userModel = new UserModel();
     }
 
     public function get_carpools(array $searchParams): false|array
@@ -205,6 +208,210 @@ class CarpoolModel extends Model
             error_log("Erreur rechercher procahine date: {$e->getMessage()}");
             return null;
         }
+    }
+
+    public function get_carpool_details(int $carpoolId): ?array
+    {
+        try {
+            $query = "
+                SELECT 
+                -- Concernant le vehicule
+                c.covoiturage_id, c.date_depart, c.heure_depart, c.lieu_depart, 
+                c.date_arrivee, c.heure_arrivee, c.lieu_arrivee, c.statut, 
+                c.nb_places as capacite_covoiturage, c.prix_personne, 
+                c.conducteur_id, c.voiture_id,
+                TIMESTAMPDIFF(MINUTE, CONCAT(c.date_depart, ' ', c.heure_depart), CONCAT(c.date_arrivee, ' ', c.heure_arrivee)) as duree_minutes,
+                
+                -- Concernant le chauffeur
+                u.user_id, u.nom, u.prenom, u.email, u.password, u.telephone, 
+                u.adresse, u.pseudo, u.photo, u.date_creation as date_inscription,
+                
+                -- Concernant le vehicule
+                v.voiture_id, v.modele, v.immatriculation, v.energie, v.couleur, 
+                v.nb_places as capacite_vehicule, v.date_premiere_immatriculation, 
+                v.user_id, m.libelle as marque,
+                (SELECT AVG(note) FROM avis a WHERE a.conducteur_id = c.conducteur_id AND a.statut = 'publie') as note_chauffeur,
+                (SELECT COUNT(*) FROM avis a WHERE a.conducteur_id = c.conducteur_id AND a.statut = 'publie') as nb_avis,
+                (c.nb_places - COALESCE(
+                    (
+                        SELECT SUM(nb_place_reservee) 
+                         FROM reservation 
+                         WHERE covoiturage_id = c.covoiturage_id AND reservation.statut = 'confirme'
+                    ), 0)
+                ) as places_restantes
+                FROM covoiturage c
+                JOIN user u ON c.conducteur_id = u.user_id
+                JOIN voiture v ON c.voiture_id = v.voiture_id
+                JOIN marque m ON v.marque_id = m.marque_id
+                WHERE c.covoiturage_id = ?
+                AND c.statut = 'prevu'
+            ";
+
+            $stmt = $this->connection->prepare($query);
+            $stmt->execute([$carpoolId]);
+            $carpool = $stmt->fetch();
+
+            if (!$carpool) return null;
+
+            $dureeHeures = floor($carpool->duree_minutes / 60);
+            $dureeMinutes = $carpool->duree_minutes % 60;
+            $noteMoyenne = round($carpool->note_chauffeur ?? 0, 1);
+            $driverId = $carpool->conducteur_id;
+
+            return [
+                'id' => $carpool->covoiturage_id,
+                'dapart' => [
+                    'date' => $carpool->date_depart,
+                    'heure' => $carpool->heure_depart,
+                    'lieu' => $carpool->lieu_depart,
+                    'date_formatee' => date('d/m/Y', strtotime($carpool->date_depart)),
+                    'heure_formatee' => date('H:i', strtotime($carpool->heure_depart)),
+                ],
+                'arrivee' => [
+                    'date' => $carpool->date_arrivee,
+                    'heure' => $carpool->heure_arrivee,
+                    'lieu' => $carpool->lieu_arrivee,
+                    'date_formatee' => date('d/m/Y', strtotime($carpool->date_arrivee)),
+                    'heure_formatee' => date('H:i', strtotime($carpool->heure_arrivee)),
+                ],
+                'general' => [
+                    'tarif' => $carpool->prix_personne,
+                    'places_totals' => $carpool->capacite_covoiturage,
+                    'places_restantes' => $carpool->places_restantes,
+                    'statut' => $carpool->statut,
+                    'ecologique' => (int)$carpool->energie === 1,
+                    'duree' => [
+                        'minutes' => $carpool->duree_minutes,
+                        'affichage' => $dureeHeures > 0 ?
+                            "{$dureeHeures}h" . ($dureeMinutes > 0 ? "{$dureeMinutes}min" : '') : "{$dureeMinutes}min"
+                        //0h 40 min => 40min, 3h 12 min => 3h 12min, 2h 00 min => 2h
+                    ]
+                ],
+                'conducteur' => [
+                    'id' => $driverId,
+                    'nom' => $carpool->nom,
+                    'prenom' => $carpool->prenom,
+                    'email' => $carpool->email,
+                    'telephone' => $carpool->telephone,
+                    'photo' => $carpool->photo,
+                    'date_inscription' => $carpool->date_inscription,
+                    'note' => $noteMoyenne,
+                    'nb_avis' => $carpool->nb_avis ?? 0,
+                    'preferences' => $this->userModel->get_preferences($driverId) ?? $this->userModel->get_preferences_with_mysql($driverId),
+                ],
+                'vehicule' => [
+                    'id' => $carpool->voiture_id,
+                    'marque' => $carpool->marque,
+                    'modele' => $carpool->modele,
+                    'immatriculation' => $carpool->immatriculation,
+                    'couleur' => $carpool->couleur,
+                    'energie' => $carpool->energie == '1' ? 'Electrique' : '',
+                    'nb_places' => $carpool->capacite_vehicule,
+                    'date_premiere_immatriculation' => $carpool->date_premiere_immatriculation,
+                    'annee_circulation' => date('Y', strtotime($carpool->date_premiere_immatriculation)),
+                ],
+                'avis' =>array_map(function($avis) {
+                    return [
+                        'id' => $avis->avis_id,
+                        'note' => $avis->note,
+                        'commentaire' => $avis->commentaire,
+                        'date' => $avis->date_creation,
+                        'date_formatee' => date('d/m/Y', strtotime($avis->date_creation)),
+                        'passager' => [
+                            'pseudo' => $avis->pseudo,
+                            'nom' => $avis->nom,
+                            'prenom' => $avis->prenom,
+                            'photo' => $avis->photo,
+                        ]
+                    ];
+                }, $this->get_driver_reviews($driverId)),
+
+                'passagers' => array_map(function($passager) {
+                    return [
+                        'id' => $passager->user_id,
+                        'pseudo' => $passager->pseudo,
+                        'nom' => $passager->nom,
+                        'prenom' => $passager->prenom,
+                        'photo' => $passager->photo,
+                        'nb_places' => $passager->nb_place_reservee,
+                        'date_inscription' => $passager->date_creation,
+                        'date_formatee' => date('d/m/Y', strtotime($passager->date_creation)),
+                    ];
+                }, $this->get_carpool_passengers($carpoolId)),
+
+                'autres_vehicules' => array_map(function($vehicule) {
+                    return [
+                        'marque' => $vehicule->marque,
+                        'modele' => $vehicule->modele,
+                        'immatriculation' => $vehicule->immatriculation,
+                        'couleur' => $vehicule->couleur,
+                        'nb_places' => $vehicule->nb_places,
+                        'energie' => $vehicule->energie == '1' ? 'Electrique' : '',
+                        'ecologique' => $vehicule->energie == '1'
+                    ];
+                }, $this->get_other_vehicles($driverId, $carpool->voiture_id)),
+            ];
+
+        }catch(\PDOException $e) {
+            error_log("Erreur recuperation details covoiturage {$e->getMessage()}");
+            return null;
+        }
+    }
+
+    private function get_driver_reviews(int $driverId): false|array
+    {
+        $query = "
+            SELECT 
+                a.avis_id, a.commentaire, a.note, a.date_creation,
+                u.nom, u.prenom, u.pseudo, u.photo
+            FROM avis a 
+            JOIN user u on a.conducteur_id = u.user_id
+            WHERE a.covoiturage_id = ? AND a.statut = 'publie'
+            ORDER BY a.date_creation DESC
+            LIMIT 10
+        ";
+
+        $stmt = $this->connection->prepare($query);
+        $stmt->execute([$driverId]);
+
+        return $stmt->fetchAll();
+    }
+
+
+    private function get_carpool_passengers(int $carpoolId): false|array
+    {
+        $query = "
+            SELECT 
+                r.passager_id, r.nb_place_reservee, r.date_creation, 
+                u.user_id, nom, prenom, pseudo, credits, photo
+            FROM reservation r 
+            JOIN user u on r.passager_id = u.user_id
+            WHERE r.covoiturage_id = ?
+            AND r.statut = 'confirme'
+            ORDER BY r.date_creation
+        ";
+
+        $stmt = $this->connection->prepare($query);
+        $stmt->execute([$carpoolId]);
+
+        return $stmt->fetchAll();
+
+    }
+
+    private function get_other_vehicles(int $driverId, int $currentVehicleId): false|array
+    {
+        $query = "
+            SELECT v.voiture_id, modele, immatriculation, energie, couleur, m.libelle as marque
+            FROM voiture v 
+            JOIN marque m on v.marque_id = m.marque_id
+            WHERE v.user_id = ? AND v.voiture_id != ?
+            ORDER BY v.date_creation DESC
+            LIMIT 3
+        ";
+
+        $stmt = $this->connection->prepare($query);
+        $stmt->execute([$driverId, $currentVehicleId]);
+        return $stmt->fetchAll();
     }
 
 }

@@ -74,6 +74,28 @@ class CarpoolController extends Controller
 
     }
 
+    public function carpool_details(): void
+    {
+        $this->auth->require_auth();
+        if (!isset($_GET['covoiturage'])) {
+            $this->redirect('404');
+        }
+
+        $id = (int) $_GET['covoiturage'];
+        $carpoolDetails = $this->carpoolModel->get_carpool_details($id);
+
+        if (!$carpoolDetails) {
+
+        }
+
+
+        $data = [
+            'title' => "Trajet " . $carpoolDetails['depart']['lieu'] . "-" .   $carpoolDetails['arrivee']['lieu'],
+            'carpoolDetails' => $carpoolDetails
+        ];
+        $this->renderView('/carpool/details', $data);
+    }
+
     public function autocomplete(): void
     {
         $query = $_GET['query'] ?? '';

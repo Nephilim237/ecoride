@@ -49,7 +49,9 @@ try {
         ->get('/carpool', 'CarpoolController@index')
         ->get('/carpool/search', 'CarpoolController@search')
         ->get('/carpool/autocomplete', 'CarpoolController@autocomplete')
+        ->get('carpool/details', 'CarpoolController@carpool_details')
         ->get('/logout', 'AuthController@logout')
+        ->get('/404', 'ErrorController@notFound')
     ;
 
     $router->dispatch();
