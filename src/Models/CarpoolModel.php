@@ -260,7 +260,7 @@ class CarpoolModel extends Model
 
             return [
                 'id' => $carpool->covoiturage_id,
-                'dapart' => [
+                'depart' => [
                     'date' => $carpool->date_depart,
                     'heure' => $carpool->heure_depart,
                     'lieu' => $carpool->lieu_depart,
@@ -356,6 +356,33 @@ class CarpoolModel extends Model
             error_log("Erreur recuperation details covoiturage {$e->getMessage()}");
             return null;
         }
+    }
+
+    public function get_user_credits(int $passengerId) {
+        $query = "SELECT credits FROM user WHERE  user_id = ?";
+        $stmt = $this->connection->prepare($query);
+        $stmt->execute([$passengerId]);
+
+        $result = $stmt->fetch();
+
+        return $result ? $result->credits : 0;
+    }
+
+    public function is_user_already_registered(int $carpoolId, int $passengerId): bool
+    {
+        $query = "
+            SELECT COUNT(*) as count
+            FROM reservation r
+            WHERE r.covoiturage_id = ?
+            AND r.passager_id = ?
+            AND R.statut = 'confirme'
+        ";
+
+        $stmt = $this->connection->prepare($query);
+        $stmt->execute([$carpoolId, $passengerId]);
+        $result = $stmt->fetch();
+
+        return $result && $result->count > 0;
     }
 
     private function get_driver_reviews(int $driverId): false|array

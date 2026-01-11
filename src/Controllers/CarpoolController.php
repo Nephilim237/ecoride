@@ -5,16 +5,20 @@ namespace Ecoride\Ecoride\Controllers;
 use Ecoride\Ecoride\Core\Controller;
 use Ecoride\Ecoride\Models\CarpoolModel;
 use Ecoride\Ecoride\Services\AddressAutocompleteService;
+use Ecoride\Ecoride\Services\CarpoolService;
 
 class CarpoolController extends Controller
 {
     private CarpoolModel $carpoolModel;
     private AddressAutocompleteService $addressService;
+    private CarpoolService $carpoolService;
+
     public function __construct()
     {
         parent::__construct();
         $this->carpoolModel = new CarpoolModel();
         $this->addressService = new AddressAutocompleteService();
+        $this->carpoolService = new CarpoolService();
     }
 
     public function index(): void
@@ -74,44 +78,8 @@ class CarpoolController extends Controller
 
     }
 
-    public function carpool_details(): void
+    private function get_active_filters(array $searchParams): array
     {
-        $this->auth->require_auth();
-        if (!isset($_GET['covoiturage'])) {
-            $this->redirect('404');
-        }
-
-        $id = (int) $_GET['covoiturage'];
-        $carpoolDetails = $this->carpoolModel->get_carpool_details($id);
-
-        if (!$carpoolDetails) {
-
-        }
-
-
-        $data = [
-            'title' => "Trajet " . $carpoolDetails['depart']['lieu'] . "-" .   $carpoolDetails['arrivee']['lieu'],
-            'carpoolDetails' => $carpoolDetails
-        ];
-        $this->renderView('/carpool/details', $data);
-    }
-
-    public function autocomplete(): void
-    {
-        $query = $_GET['query'] ?? '';
-
-        // Verifier qqu'omn a a faire a une requete AJAX
-        if (empty($query) || mb_strlen($query) < 3) {
-            $this->json([]);
-            return;
-        }
-
-        $addresses = $this->addressService->search_address($query);
-
-        $this->json($addresses);
-    }
-
-    private function get_active_filters(array $searchParams): array {
         $activeFilters = [];
 
         if (!empty($searchParams['is_ecologic']) && $searchParams['is_ecologic'] === 'on') {
@@ -131,6 +99,67 @@ class CarpoolController extends Controller
         }
 
         return $activeFilters;
+    }
+
+    public function carpool_details(): void
+    {
+        $this->auth->require_auth();
+        if (!isset($_GET['covoiturage'])) {
+            $this->redirect('404');
+        }
+
+        $carpoolId = (int)$_GET['covoiturage'];
+        $seats = (int)$_GET['nb_passagers'] ?? 1;
+        $carpoolDetails = $this->carpoolModel->get_carpool_details($carpoolId);
+
+        if (!$carpoolDetails) {
+            $this->session->set_flash('error', "Covoiturage non trouvé.");
+            return;
+        }
+
+        $userId = $this->auth->get_connected_user_id() ?? null;
+        $canUserParticipate = $this->carpoolService->can_user_participate($carpoolId, $userId, $seats);
+
+        if (!$canUserParticipate['can_participate']) {
+            //[
+            //   'plus de place',
+            //    'Credits insuffisants',   => 'plus de place' <br>  'Credits insuffisants' <br> 'Vous etes chauffeur'
+            //    'Vous etes chauffeur'
+            //];
+            $this->session->set_flash('error', implode('<br>', $canUserParticipate['errors']));
+        }
+
+        $data = [
+            'title' => "Trajet " . $carpoolDetails['depart']['lieu'] . "-" . $carpoolDetails['arrivee']['lieu'],
+            'carpool' => $carpoolDetails,
+            'user' => $this->userModel->find_by_id($userId),
+            'canParticipate' => $canUserParticipate['can_participate'],
+            'canUserParticipate' => $canUserParticipate
+        ];
+        $this->renderView('/carpool/details', $data);
+    }
+
+    public function handle_apply() {
+
+    }
+
+    public function apply_success() {
+        $this->renderView('carpool/apply-success');
+    }
+
+    public function autocomplete(): void
+    {
+        $query = $_GET['query'] ?? '';
+
+        // Verifier qqu'omn a a faire a une requete AJAX
+        if (empty($query) || mb_strlen($query) < 3) {
+            $this->json([]);
+            return;
+        }
+
+        $addresses = $this->addressService->search_address($query);
+
+        $this->json($addresses);
     }
 
 }

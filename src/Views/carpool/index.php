@@ -170,9 +170,11 @@
                                                 <?= $carpool['vehicule']['modele'] ?>
                                             </div>
 
-                                            <a href="<?= url('/carpool/details', ['covoiturage' => $carpool['id']]) ?>"
-                                               class="btn btn-small btn-bg-main rounded-pill px-4">Voir les
-                                                details
+                                            <a href="<?= url('/carpool/details', [
+                                                'covoiturage' => $carpool['id'],
+                                                'nb_passagers' => (int)$_GET['nb_passagers']
+                                            ]) ?>" class="btn btn-small btn-bg-main rounded-pill px-4">
+                                                Voir les details
                                             </a>
                                         </div>
                                     </div>

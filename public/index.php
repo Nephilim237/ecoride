@@ -50,6 +50,8 @@ try {
         ->get('/carpool/search', 'CarpoolController@search')
         ->get('/carpool/autocomplete', 'CarpoolController@autocomplete')
         ->get('carpool/details', 'CarpoolController@carpool_details')
+        ->post('carpool/apply', 'CarpoolController@handle_apply')
+        ->get('carpool/apply-success', 'CarpoolController@apply_success')
         ->get('/logout', 'AuthController@logout')
         ->get('/404', 'ErrorController@notFound')
     ;
