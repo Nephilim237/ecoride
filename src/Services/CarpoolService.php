@@ -20,7 +20,7 @@ class CarpoolService extends Service
 
     }
 
-    public function can_user_participate(int $carpoolId, int $passengerId, int $seats = 1)
+    public function can_user_participate(int $carpoolId, int $passengerId, int $seats = 1): array
     {
         $errors = [];
         $carpoolDetails = null;
@@ -82,8 +82,58 @@ class CarpoolService extends Service
     }
 
 
-    public function participate(int $carpoolId, int $passengerId, int $seats = 1)
+    public function participate(int $carpoolId, int $passengerId, int $seats = 1): array
     {
+        // Verifier si l'utilisateur peut participer au covoiturage
+        $check = $this->can_user_participate($carpoolId, $passengerId, $seats);
+
+        if (!$check['can_participate']) {
+            return [
+                'success' => false,
+                'errors' => $check['errors'] ?? [$check['error']]
+            ];
+        }
+
+        try {
+            $this->connection->beginTransaction();
+            // Deduire les credits de l'utilisateur
+            $totalCoast = $check['totalCoast'];
+            $this->carpoolModel->deduct_user_credits($passengerId, $totalCoast);
+
+            // Preleve les commissions de la plateforme
+            // Implementer une methode platform_commisions_fees(float $amount) dans une table specifique sur mongoDB
+            $commissions = 2 * $seats;
+
+            // Creer la reservation
+            $reservationId = $this->carpoolModel->create_reservation($passengerId, $carpoolId, $seats);
+
+
+            // Gains du chauffeur
+            $driverEarnings = ($check['carpool']['general']['tarif'] - 2) * $seats;
+
+            // Journaliser la transaction
+            $this->carpoolModel->log_transaction($passengerId, $carpoolId, $reservationId, $totalCoast, $commissions, $driverEarnings);
+
+            $this->connection->commit();
+
+            return [
+                'success' => true,
+                'reservation_id' => $reservationId,
+                'coast' => $check['carpool']['general']['tarif'],
+                'total_coast' => $totalCoast,
+                'commissions' => $commissions,
+                'driver_earning' => $driverEarnings,
+                'remaining_credits' => $check['credits_after'],
+            ];
+
+        }catch (\Exception $e) {
+            error_log("Erreur confirmation de reservation du covoiturage: {$e->getMessage()}");
+            return [
+                'success' => false,
+                'error' => ["Erreur confirmation de reservation du covoiturage."],
+            ];
+
+        }
 
     }
 }

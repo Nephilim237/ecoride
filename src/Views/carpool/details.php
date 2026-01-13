@@ -1,7 +1,7 @@
 <section class="flash-messages">
     <div class="container">
         <?php if ($this->session->has_flash('error')): ?>
-            <div class="alert alert-error">
+            <div class="alert alert-warning">
                 <?= $this->session->get_flash('error') ?>
             </div>
         <?php endif; ?>
@@ -47,7 +47,7 @@
             <?php endif; ?>
         </div>
 
-        <?php dump($carpool); ?>
+        <?php dump($carpool, $canUserParticipate); ?>
 
 <!--        Afficher les info du trajet-->
         <?php if (!empty($carpool)): ?>

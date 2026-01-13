@@ -3,6 +3,7 @@
 namespace Ecoride\Ecoride\Models;
 
 use Ecoride\Ecoride\Core\Model;
+use MongoDB\BSON\UTCDateTime;
 
 class CarpoolModel extends Model
 {
@@ -383,6 +384,102 @@ class CarpoolModel extends Model
         $result = $stmt->fetch();
 
         return $result && $result->count > 0;
+    }
+
+    public function deduct_user_credits(int $passengerId, float $totalCoast): void
+    {
+        $query = "UPDATE user SET credits = credits - ? WHERE user_id = ?";
+        $stmt = $this->connection->prepare($query);
+        $stmt->execute([$totalCoast, $passengerId]);
+    }
+
+    public function create_reservation(int $passengerId, int $carpoolId, int $seats): int
+    {
+        $query = "
+            INSERT INTO reservation (passager_id, covoiturage_id, statut, nb_place_reservee)
+            VALUES (?, ?, 'confirme', ?)
+        ";
+
+        $stmt = $this->connection->prepare($query);
+        $stmt->execute([$passengerId, $carpoolId, $seats]);
+
+        return (int)$this->connection->lastInsertId();
+    }
+
+    public function log_transaction(int $userId, int $carpoolId, int $reservationId, float $totalCoast, float $commission, float $driverEarnings): void
+    {
+        try {
+            $collection = $this->mongo->getCollection('transaction');
+
+            $transaction = [
+                'user_id' => $userId,
+                'carpool_id' => $carpoolId,
+                'reservation_id' => $reservationId,
+                'total_coast' => $totalCoast,
+                'commissions' => $commission,
+                'driver_earning' => $driverEarnings,
+                'platform_earning' => $commission,
+                'transaction_date' => new UTCDateTime(),
+                'statut' => 'completed'
+            ];
+
+            $collection->insertOne($transaction);
+
+        } catch (\Exception $e) {
+            error_log("Erreur enregistrement de la transction dans mongoDB");
+        }
+    }
+
+
+    public function get_reservation_details(int $reservationId): ?array
+    {
+        $query = "
+            SELECT
+                r.reservation_id, r.statut, r.nb_place_reservee, r.date_creation,
+                u.nom, u.prenom, u.email, u.pseudo, c.covoiturage_id, c.lieu_depart, 
+                c.lieu_arrivee, c.date_depart, c.heure_depart, c.prix_personne, 
+                driver.pseudo as pseudo_conducteur, driver.nom as nom_conducteur,
+                driver.prenom as prenom_conducteur
+            FROM reservation r
+            JOIN covoiturage c on r.covoiturage_id = c.covoiturage_id
+            JOIN user u on r.passager_id = u.user_id
+            JOIN user driver on c.conducteur_id = driver.user_id
+            WHERE r.reservation_id = ?
+        ";
+
+        $stmt = $this->connection->prepare($query);
+        $stmt->execute([$reservationId]);
+        $result = $stmt->fetch();
+
+        if (!$result) {
+            return null;
+        }
+
+        return [
+            'id' => $result->reservation_id,
+            'nb_places' => $result->nb_place_reservee,
+            'date_creation' => $result->date_creation,
+            'statut' => $result->statut,
+            'passager' => [
+                'nom' => $result->nom,
+                'prenom' => $result->prenom,
+                'email' => $result->email,
+                'pseudo' => $result->pseudo,
+            ],
+            'carpool' => [
+                'id' => $result->covoiturage_id,
+                'lieu_depart' => $result->lieu_depart,
+                'lieu_arrivee' => $result->lieu_arrivee,
+                'date_depart' => $result->date_depart,
+                'heure_depart' => $result->heure_depart,
+                'tarif' => (float)$result->prix_personne
+            ],
+            'conducteur' => [
+                'nom' => $result->nom_conducteur,
+                'prenom' => $result->prenom_conducteur,
+                'pseudo' => $result->pseudo_conducteur,
+            ]
+        ];
     }
 
     private function get_driver_reviews(int $driverId): false|array
