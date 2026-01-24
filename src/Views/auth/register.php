@@ -73,6 +73,12 @@
                                            class="btn btn-bg-chinese outfit fw-500 py-2 rounded-pill fs-18 w-100">
                                 </div>
                             </div>
+                            <p class="text-center">
+                                Vous possédé déjà un compte ?
+                                <a href="<?= url('/login') ?>" class="link-dark">
+                                    Se connecter
+                                </a>
+                            </p>
                         </form>
                     </div>
                 </div>

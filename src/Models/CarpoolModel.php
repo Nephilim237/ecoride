@@ -296,6 +296,7 @@ class CarpoolModel extends Model
                     'telephone' => $carpool->telephone,
                     'photo' => $carpool->photo,
                     'date_inscription' => $carpool->date_inscription,
+                    'membre_depuis' => date('D d M Y', strtotime($carpool->date_inscription)),
                     'note' => $noteMoyenne,
                     'nb_avis' => $carpool->nb_avis ?? 0,
                     'preferences' => $this->userModel->get_preferences($driverId) ?? $this->userModel->get_preferences_with_mysql($driverId),

@@ -10,6 +10,9 @@ use Ecoride\Ecoride\Core\MongoManager;
 use Whoops\run;
 use Whoops\Handler\PrettyPageHandler;
 
+//date_default_timezone_set('Europe/Paris');
+//setlocale(LC_TIME, 'fr_FR');
+
 $whoops = new Run();
 $whoops->pushHandler(new PrettyPageHandler());
 
