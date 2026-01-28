@@ -490,8 +490,8 @@ class CarpoolModel extends Model
                 a.avis_id, a.commentaire, a.note, a.date_creation,
                 u.nom, u.prenom, u.pseudo, u.photo
             FROM avis a 
-            JOIN user u on a.conducteur_id = u.user_id
-            WHERE a.covoiturage_id = ? AND a.statut = 'publie'
+            JOIN user u on a.passager_id = u.user_id
+            WHERE a.conducteur_id = ? AND a.statut = 'publie'
             ORDER BY a.date_creation DESC
             LIMIT 10
         ";
