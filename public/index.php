@@ -10,6 +10,9 @@ use Ecoride\Ecoride\Core\MongoManager;
 use Whoops\run;
 use Whoops\Handler\PrettyPageHandler;
 
+//date_default_timezone_set('Europe/Paris');
+//setlocale(LC_TIME, 'fr_FR');
+
 $whoops = new Run();
 $whoops->pushHandler(new PrettyPageHandler());
 
@@ -49,7 +52,11 @@ try {
         ->get('/carpool', 'CarpoolController@index')
         ->get('/carpool/search', 'CarpoolController@search')
         ->get('/carpool/autocomplete', 'CarpoolController@autocomplete')
+        ->get('carpool/details', 'CarpoolController@carpool_details')
+        ->post('carpool/apply', 'CarpoolController@handle_apply')
+        ->get('carpool/apply-success', 'CarpoolController@apply_success')
         ->get('/logout', 'AuthController@logout')
+        ->get('/404', 'ErrorController@notFound')
     ;
 
     $router->dispatch();

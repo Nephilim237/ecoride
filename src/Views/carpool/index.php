@@ -50,7 +50,8 @@
                                    id="note_min" value="<?= $_GET['note_min'] ?? 0 ?>">
                             <output for="note_min" class="rangeOutput" aria-hidden="true"></output>
                         </div>
-                        <a href="<?= $this->build_clear_filters_url() ?>" class="btn btn-sm btn-bg-main w-100 rounded-pill"> Effacer les
+                        <a href="<?= $this->build_clear_filters_url() ?>"
+                           class="btn btn-sm btn-bg-main w-100 rounded-pill"> Effacer les
                             filtres</a>
                     </form>
                 </div>
@@ -59,22 +60,18 @@
                     <div class="mb-3">
                         <h5 class="text-muted me-2">Filtres actifs: </h5>
                         <ul class="list-group">
-
                             <?php foreach ($activeFilters as $filter): ?>
-
                                 <li class="list-group-item d-flex justify-content-between align-items-start">
                                     <div class="ms-2 me-auto">
                                         <?= $filter['label'] ?>
                                     </div>
-
-                                    <a href="<?= $this->build_remove_filter_url($filter['name']) ?>" class="badge btn-bg-main rounded-pill p-1 ms-2">
+                                    <a href="<?= $this->build_remove_filter_url($filter['name']) ?>"
+                                       class="badge btn-bg-main rounded-pill p-1 ms-2">
                                         <i class="fas fa-times"></i>
                                     </a>
-
                                 </li>
                             <?php endforeach; ?>
                         </ul>
-
                     </div>
                 <?php endif; ?>
             </div>
@@ -173,8 +170,11 @@
                                                 <?= $carpool['vehicule']['modele'] ?>
                                             </div>
 
-                                            <a href="#" class="btn btn-small btn-bg-main rounded-pill px-4">Voir les
-                                                details
+                                            <a href="<?= url('/carpool/details', [
+                                                'covoiturage' => $carpool['id'],
+                                                'nb_passagers' => (int)$_GET['nb_passagers']
+                                            ]) ?>" class="btn btn-small btn-bg-main rounded-pill px-4">
+                                                Voir les details
                                             </a>
                                         </div>
                                     </div>
