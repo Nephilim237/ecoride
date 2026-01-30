@@ -153,6 +153,4 @@
 </section>
 
 <section>
-
-    <?php dump($currentUser); ?>
 </section>
