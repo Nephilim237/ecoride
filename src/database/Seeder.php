@@ -55,8 +55,16 @@ class Seeder
         $this->db->exec("SET FOREIGN_KEY_CHECKS = 0");
 
         $tables = [
-            'preference', 'avis', 'reservation', 'covoiturage', 'voiture',
-            'role_user', 'user', 'marque', 'role_admin'
+            'avis',
+            'covoiturage',
+            'marque',
+            'preference',
+            'preference_user',
+            'reservation',
+            'role',
+            'role_user',
+            'user',
+            'voiture'
         ];
 
         foreach ($tables as $table) {
@@ -77,9 +85,26 @@ class Seeder
         echo "🚘 Creation des marques de voiture...\n";
 
         $marques = [
-            'Renault', 'Peugeot', 'Citroën', 'Volkswagen', 'Ford', 'BMW',
-            'Mercedes', 'Audi', 'Toyota', 'Nissan', 'Hyundai', 'Kia',
-            'Fiat', 'Opel', 'Volvo', 'Seat', 'Skoda', 'Mazda', 'Honda', 'Suzuki'
+            'Renault',
+            'Peugeot',
+            'Citroën',
+            'Volkswagen',
+            'Ford',
+            'BMW',
+            'Mercedes',
+            'Audi',
+            'Toyota',
+            'Nissan',
+            'Hyundai',
+            'Kia',
+            'Fiat',
+            'Opel',
+            'Volvo',
+            'Seat',
+            'Skoda',
+            'Mazda',
+            'Honda',
+            'Suzuki'
         ];
 
         foreach ($marques as $marque) {
@@ -277,14 +302,13 @@ class Seeder
             $stmt->execute([$userId, $roleId]);
         } catch (\PDOException $e) {
             // Ignorer les doublons
-            if ($e->getCode() === '23000') {// Violation de contrainte d'unicite
-                echo " Role deja assigne: Utilisateur: $userId - Role: $role \n";
+            if ($e->getCode() === '23000') { // Violation de contrainte d'unicite
+                echo " Role deja assigne: Utilisateur: $userId - Role: $roleId \n";
                 return;
             } else {
                 throw $e;
             }
         }
-
     }
 
     private function displayStatistics(array $stats): void
@@ -293,7 +317,6 @@ class Seeder
         echo "👤 Passagers: {$stats['role_passager']} \n";
         echo "🚗 Chauffeurs: {$stats['role_chauffeur']} \n";
         echo "🔗 Chauffeurs-Passagers: {$stats['role_chauffeur_passager']} \n";
-
     }
 
     //Date 26/10
@@ -302,9 +325,26 @@ class Seeder
         echo "🧳 Creation des covoiturage...\n";
 
         $villesFrance = [
-            'Paris', 'Lyon', 'Marseille', 'Toulouse', 'Nice', 'Nantes', 'Strasbourg',
-            'Montpellier', 'Bordeaux', 'Lille', 'Rennes', 'Reims', 'Le Havre', 'Saint-Étienne',
-            'Toulon', 'Grenoble', 'Dijon', 'Angers', 'Villeurbanne', 'Le Mans'
+            'Paris',
+            'Lyon',
+            'Marseille',
+            'Toulouse',
+            'Nice',
+            'Nantes',
+            'Strasbourg',
+            'Montpellier',
+            'Bordeaux',
+            'Lille',
+            'Rennes',
+            'Reims',
+            'Le Havre',
+            'Saint-Étienne',
+            'Toulon',
+            'Grenoble',
+            'Dijon',
+            'Angers',
+            'Villeurbanne',
+            'Le Mans'
         ];
 
         $countCovoiturage = 0;
@@ -345,7 +385,8 @@ class Seeder
                      voiture_id, date_creation) VALUES ( 
                      :date_depart, :heure_depart, :lieu_depart, :date_arrivee, :heure_arrivee, 
                      :lieu_arrivee, :statut, :nb_places, :prix_personne, :conducteur_id, 
-                     :voiture_id, :date_creation)");
+                     :voiture_id, :date_creation)"
+                    );
 
                 $stmt->execute($infoCovoiturage);
                 $this->covoiturageIds[] = $this->db->lastInsertId();
@@ -356,7 +397,8 @@ class Seeder
         echo "✅ $countCovoiturage covoiturages crees \n";
     }
 
-    private function generateArrivalTime($dateDepart, $dureeTrajet) {
+    private function generateArrivalTime($dateDepart, $dureeTrajet)
+    {
         $arrival = clone $dateDepart;
         $arrival->modify("+{$dureeTrajet} minutes");
 
@@ -368,8 +410,8 @@ class Seeder
         echo "📖 Creation des reservations...\n";
         $countReservation = 0;
 
+        $stmt = $this->db->prepare("SELECT nb_places, conducteur_id FROM covoiturage WHERE covoiturage_id = :covoiturage_id");
         foreach ($this->covoiturageIds as $covoiturageId) {
-            $stmt = $this->db->prepare("SELECT nb_places, conducteur_id FROM covoiturage WHERE covoiturage_id = :covoiturage_id");
             $stmt->execute(['covoiturage_id' => $covoiturageId]);
             $covoiturage = $stmt->fetch(); // ['nb_places' => 12, 'conducteur_id' => 30]
             $nbPlacesDispo = $covoiturage->nb_places;
@@ -379,7 +421,12 @@ class Seeder
             $nbReservations = $this->faker->numberBetween(1, $nbPlacesDispo);
             $passagersAyantReserve = [];
 
-            for($i=0; $i < $nbReservations; $i++) {
+            $resaStmt = $this->db->prepare(
+                "INSERT INTO reservation (
+                     passager_id, covoiturage_id, statut, nb_place_reservee, date_creation)  
+                    VALUES (:passager_id, :covoiturage_id, :statut, :nb_place_reservee, :date_creation)"
+            );
+            for ($i = 0; $i < $nbReservations; $i++) {
                 // Une reservation est faite uniquement aux utilisateurs autres que le chauffeur
                 // Ou au utilisateurs n'ayant pas encore de reservation.
                 $passagersDispo = array_diff($this->userIds, [$conducteurId], $passagersAyantReserve);
@@ -397,12 +444,8 @@ class Seeder
                 ];
 
                 try {
-                    $stmt = $this->db->prepare(
-                        "INSERT INTO reservation (
-                     passager_id, covoiturage_id, statut, nb_place_reservee, date_creation)  
-                    VALUES (:passager_id, :covoiturage_id, :statut, :nb_place_reservee, :date_creation)");
 
-                    $stmt->execute($infoResa);
+                    $resaStmt->execute($infoResa);
                     $countReservation++;
                 } catch (\PDOException $e) {
                     // Ignorer les doublons
@@ -438,13 +481,14 @@ class Seeder
                     'statut' => $this->faker->randomElement(['publie', 'modere', 'modere', 'modere']),
                     'passager_id' => $reservation->passager_id,
                     'conducteur_id' => $reservation->conducteur_id,
-                    'covoiturage_id'=> $reservation->covoiturage_id,
+                    'covoiturage_id' => $reservation->covoiturage_id,
                     'date_creation' => $this->faker->dateTimeBetween('-12 months')->format('Y-m-d')
                 ];
 
                 $stmt = $this->db->prepare(
                     "INSERT INTO avis (commentaire, note, statut, passager_id, conducteur_id, covoiturage_id, date_creation)
-                    VALUES (:commentaire, :note, :statut, :passager_id, :conducteur_id, :covoiturage_id, :date_creation)");
+                    VALUES (:commentaire, :note, :statut, :passager_id, :conducteur_id, :covoiturage_id, :date_creation)"
+                );
 
                 $stmt->execute($infoAvis);
                 $countAvis++;
@@ -484,9 +528,31 @@ class Seeder
         echo "✅ $countPreference preferences creees.\n";
     }
 
-//    private function seedMongoData()
-//    {
-//
-//    }
 
+    private function seedPreferencesUserWithMysql(): void
+    {
+        echo " Creation des parametres utilisateurs ... \n";
+        $countParametre = 0;
+        foreach ($this->userIds as $userId) {
+            $hasCar  = $this->userHasCar($userId);
+
+            if ($hasCar) {
+                $stmt = $this->db->prepare("INSERT INTO preference_user (user_id, preference_id, valeur_preference) VALUES (?,?,?)");
+                $stmt->execute([
+                    $userId,
+                    1,
+                    $this->faker->randomElement(['oui', 'non'])
+                ]);
+                $stmt->execute([
+                    $userId,
+                    2,
+                    $this->faker->randomElement(['oui', 'non'])
+                ]);
+            }
+
+            $countParametre++;
+        }
+
+        echo "✅ $countParametre preferences creees ... \n";
+    }
 }

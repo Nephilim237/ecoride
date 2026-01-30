@@ -16,7 +16,7 @@ class CarpoolModel extends Model
         $query = "
             SELECT c.covoiturage_id, c.date_depart, c.heure_depart, c.lieu_depart, c.date_arrivee, 
                    c.heure_arrivee, c.lieu_arrivee, c.statut as statut_covoiturage, c.nb_places as capacite_covoiturage, c.prix_personne, 
-                   c.conducteur_id, c.voiture_id, c.date_creation, v.voiture_id, v.modele, v.immatriculation,
+                   c.conducteur_id, c.voiture_id, c.date_creation, v.modele, v.immatriculation,
                    v.energie, v.couleur, v.nb_places as capacite_vehicule, v.date_premiere_immatriculation,
                    m.libelle as marque, u.nom, u.prenom, u.email, u.telephone, u.adresse, u.pseudo, u.credits,
                    u.role_admin, u.date_naissance, u.photo, u.date_creation,
@@ -28,7 +28,14 @@ class CarpoolModel extends Model
                        SELECT (capacite_covoiturage - IFNULL(reservations_covoiturage, 0))
                    ) as places_restantes, (
                        SELECT AVG(note) FROM avis a WHERE a.conducteur_id = c.conducteur_id AND a.statut = 'publie'
-                   ) as note_chauffeur
+                   ) as note_chauffeur,
+            
+                    -- US4 FILTRE SUR LA DUREE MAXIMALE
+                    TIMESTAMPDIFF(
+                        MINUTE, 
+                        CONCAT(c.date_depart, ' ', c.heure_depart), 
+                        CONCAT(c.date_arrivee, ' ', c.heure_arrivee)
+                    ) as duree_minutes
                 
             FROM covoiturage c
             JOIN voiture v ON c.voiture_id = v.voiture_id
@@ -47,6 +54,9 @@ class CarpoolModel extends Model
         $conditions = [];
         $params = [];
 
+        /**
+         * === FIRLTRE DE BASE US3 ===
+         */
         // 1. Si le lieu de depart est fourni
         if (!empty($searchParams['lieu_depart'])) {
             $conditions[] = " c.lieu_depart LIKE :lieu_depart";
@@ -65,6 +75,34 @@ class CarpoolModel extends Model
             $params['date_depart'] = "{$searchParams['date_depart']}";
         }
 
+        /*
+         * === FILTRES AVANCES US4
+         * */
+        // Filtre ecologique (Pour des vehicules electrique uniquement)
+        if (isset($searchParams['is_ecologic']) && $searchParams['is_ecologic'] === 'on') {
+            $conditions[] = "v.energie = '1'";
+        }
+
+        // Filtrer le prix maximum
+        if (!empty($searchParams['prix_max'])) {
+            $conditions[] = "c.prix_personne <= :prix_max";
+            $params['prix_max'] = (int)$searchParams['prix_max'];
+        }
+
+        // Filtrer sur la duree max
+        if (!empty($searchParams['duree_max'])) {
+            $dureeMaxMinutes = (int)$searchParams['duree_max'] * 60; // Convertir le temps renseigne dans le
+            // formulaire de filtre. Si l'utilisateur renseigne une duree de 2h, on fera 2*60 = 120 minutes
+            $conditions[] = "TIMESTAMPDIFF(MINUTE, CONCAT(c.date_depart, ' ', c.heure_depart), CONCAT(c.date_arrivee, ' ', c.heure_arrivee)) <= :duree_max";
+            $params['duree_max'] = $dureeMaxMinutes;
+        }
+
+        // Filtrer sur la nete minimale
+        if (!empty($searchParams['note_min'])) {
+            $conditions[] = "(SELECT AVG(note) FROM avis a WHERE a.conducteur_id = u.user_id AND a.statut = 'publie') >= :note_min";
+            $params['note_min'] = (float)$searchParams['note_min'];
+        }
+
         if (!empty($conditions)) {
             $query .= " AND " . implode(" AND ", $conditions);
             //$conditions = [
@@ -78,13 +116,14 @@ class CarpoolModel extends Model
         $query .= " ORDER BY c.date_depart, c.heure_depart";
 //        $query .= " LIMIT 10"
 
-
         $stmt = $this->connection->prepare($query);
         $stmt->execute($params);
         $results = $stmt->fetchAll();
 
         try {
             return array_map(function ($result) {
+                $dureeHeures = floor($result->duree_minutes / 60);
+                $dureeMinutes = $result->duree_minutes % 60;
                 return [
                     'id' => $result->covoiturage_id,
                     'date_depart' => $result->date_depart,
@@ -117,6 +156,11 @@ class CarpoolModel extends Model
                         'immatriculation' => $result->immatriculation,
                         'capacite_vehicule' => $result->capacite_vehicule,
                         'energie' => (int)$result->energie === 1 ? 'Electrique' : '',
+                    ],
+                    'duree' => [
+                        'minutes' => $result->duree_minutes,
+                        'affichage' => $dureeHeures > 0 ?
+                            "{$dureeHeures} h" . ($dureeMinutes > 0 ? "{$dureeMinutes} min" : '') : "{$dureeMinutes} min"
                     ],
                     'is_ecologic' => (int)$result->energie === 1,
                 ];
