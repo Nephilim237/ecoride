@@ -23,6 +23,25 @@
     --chinese-black: #161616;
     --chinese-black-30: hsla(0, 0%, 9%, 30%);
     --chinese-black-70: hsla(0, 0%, 9%, 70%);
+    --bg: #f9fbff;
+    --surface: #ffffff;
+    --border: #e6eaf0;
+    --text: #0f172a;
+    --muted: #6b7280;
+    --accent: #10b981;
+    /* mint */
+    --accent-2: #06b6d4;
+    /* teal */
+    --pending: #f59e0b;
+    --pending-hover: #ffab1e;
+    --processing: #3b82f6;
+    --processing-hover: #5495ff;
+    --approved: #16a34a;
+    --approved-hover: #1ac657;
+    --rejected: #ef4444;
+    --rejected-hover: #fb5353;
+    --purple: #8b5cf6;
+    --purple-hover: #9f76fe;
 }
 
 .outfit {
@@ -199,6 +218,26 @@
 .bg-green-90 {
     background-color: var(--main-green-90);
     color: var(--chinese-black);
+}
+
+.er-bg-warning {
+    background: var(--pending);
+}
+
+.er-bg-primary {
+    background: var(--processing);
+}
+
+.er-bg-success {
+    background: var(--approved);
+}
+
+.er-bg-danger {
+    background: var(--rejected);
+}
+
+.er-bg-purple {
+    background: var(--purple);
 }
 
 .er-header {
@@ -437,4 +476,113 @@
 
 .autocomplete-item:last-child {
     border-bottom: none;
+}
+
+
+/*=== DASHBOARD CSS === */
+
+/* Topbar */
+.topbar {
+    border-radius: 14px;
+    padding: .7rem .9rem;
+}
+
+.topbar .brand {
+    gap: .6rem;
+}
+
+.topbar .brand .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--main-color), var(--chinese-black-70));
+    box-shadow: 0 0 0 6px rgba(22, 22, 22, .18);
+}
+
+/* Cards */
+.card-plain {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, .04);
+}
+
+/* Metric pills */
+.metric {
+    display: flex;
+    align-items: baseline;
+    gap: .5rem;
+}
+
+.metric .value {
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+.metric .sub {
+    color: var(--muted);
+}
+
+/* Soft progress */
+.progress-soft {
+    height: .6rem;
+    background: #eef2f7;
+    border-radius: 100px;
+    overflow: hidden;
+}
+
+.progress-soft .bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--main-color), var(--main-green));
+}
+
+.er-badge i {
+    font-size: .9rem;
+}
+
+/* Table */
+.table-wrap {
+    overflow: auto;
+}
+
+.table.carpool-table {
+    background: var(--surface);
+    color: var(--text);
+    border-color: var(--border);
+}
+
+.table.carpool-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f8fafc;
+    border-bottom: 2px solid var(--border);
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.table.carpool-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+/* Notes */
+.note {
+    background: #f8fafc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: .6rem .75rem;
+}
+
+.note .label {
+    text-transform: uppercase;
+    font-size: .72rem;
+    color: var(--muted);
+    font-weight: 800;
+}
+
+/* Utilities */
+.truncate {
+    max-width: 34ch;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
