@@ -10,7 +10,6 @@ class CarpoolService extends Service
 {
 
     private \PDO $connection;
-    private CarpoolModel $carpoolModel;
 
     public function __construct()
     {
