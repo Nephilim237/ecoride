@@ -20,7 +20,38 @@ class EmailService
         $this->fromName = $_ENV['MAILER_FROM_NAME'] ?? "Ecoride";
     }
 
-    public function send_carpool_ended_notification() {
+    public function send_carpool_ended_notification(
+        string $toEmail,
+        string $passengerName,
+        string $departure,
+        string $arrival,
+        string $validationToken
+    ): bool
+    {
+        $validationUrl = BASE_URL . "/carpool/validation?token=$validationToken";
+        $subject = "Votre covoiturage a demarré.";
+        $message = <<<html
+            <h2>Bonjour $passengerName</h2>
+            <p>Votre covoiturage vient de se terminé.</p>
+            <div>
+                <p><strong>Itineraire : </strong> $departure pour $arrival</p>
+                <p><strong>Merci de valider que tout s'est bien passe</p>
+            </div>
+            
+            <div>
+                <a href="$validationUrl">Tout s'est bien passé</a>
+                <br>
+                <small>
+                    <a href="$validationUrl?problem=1">Signaler un probleme</a>
+                </small>
+            </div>
+
+            <p><strong>IMPORTANT !!!</strong> Votre validation permet au chauffeur de recevoir ses credits !</p>
+            <hr>
+            <small>Cet email a été envoyé automatiquement par EcoRide.</small>
+        html;
+
+        return $this->send_email($toEmail, $subject, $message);
 
     }
 

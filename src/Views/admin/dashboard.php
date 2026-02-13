@@ -30,35 +30,50 @@
         <!-- Metrics -->
         <div class="row g-3 mb-3">
             <div class="col-6 col-lg-3">
-                <div class="card-plain bg-green-80 p-3">
-                    <div class="metric"><span class="value">57</span><span class="sub">Covoiturages</span></div>
-                    <div class="progress-soft mt-3">
-                        <div class="bar" style="width:42%"></div>
-                    </div>
+                <div class="card-plain bg-light p-3">
+                    <div class="metric"><span class="value"><?= $nb_carpools ?></span><span class="sub">Covoiturages</span></div>
                 </div>
             </div>
             <div class="col-6 col-lg-3">
-                <div class="card-plain bg-green-80 p-3">
-                    <div class="metric"><span class="value">32</span><span class="sub">Réservations</span></div>
-                    <div class="progress-soft mt-3">
-                        <div class="bar" style="width:55%"></div>
-                    </div>
+                <div class="card-plain bg-primary text-light p-3">
+                    <div class="metric">
+                        <span class="value"><?= $nb_pendig_carpools ?></span>
+                        <span class="sub  text-light ">Covoiturages Prévus</span></div>
                 </div>
             </div>
             <div class="col-6 col-lg-3">
-                <div class="card-plain bg-green-80 p-3">
-                    <div class="metric"><span class="value">88</span><span class="sub">Passagers</span></div>
-                    <div class="progress-soft mt-3">
-                        <div class="bar" style="width:70%"></div>
-                    </div>
+                <div class="card-plain er-bg-danger p-3">
+                    <div class="metric">
+                        <span class="value text-light"><?= $nb_canceled_carpools ?></span>
+                        <span class="sub text-light">Covoiturages Annulés</span></div>
                 </div>
             </div>
             <div class="col-6 col-lg-3">
                 <div class="card-plain bg-green-80 p-3">
                     <div class="metric"><span class="value">10</span><span class="sub">Chauffeurs</span></div>
-                    <div class="progress-soft mt-3">
-                        <div class="bar" style="width:20%"></div>
-                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-6 col-lg-3">
+                <div class="card-plain bg-green-80 p-3">
+                    <div class="metric"><span class="value"><?= $nb_carpools ?></span><span class="sub">Covoiturages</span></div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card-plain bg-green-80 p-3">
+                    <div class="metric"><span class="value"><?= $nb_reservations ?></span><span class="sub">Réservations</span></div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card-plain bg-green-80 p-3">
+                    <div class="metric"><span class="value">88</span><span class="sub">Passagers</span></div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card-plain bg-green-80 p-3">
+                    <div class="metric"><span class="value">10</span><span class="sub">Chauffeurs</span></div>
                 </div>
             </div>
         </div>

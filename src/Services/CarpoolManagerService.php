@@ -5,6 +5,7 @@ namespace Ecoride\Ecoride\Services;
 use Ecoride\Ecoride\Core\Database;
 use Ecoride\Ecoride\Core\MongoManager;
 use Ecoride\Ecoride\Core\Service;
+use MongoDB\BSON\UTCDateTime;
 
 class CarpoolManagerService extends Service
 {
@@ -37,7 +38,7 @@ class CarpoolManagerService extends Service
             // Mettre a jour le statut du covoiturage
             $carpoolUpdateStatus = $this->carpoolModel->update_carpool_status($carpoolId, $driverId, 'en cours');
             if (!$carpoolUpdateStatus) {
-                throw  new \Exception("Echec lors de la mise a jour du statut de covoiturage.");
+                throw  new \Exception("Echec lors de la mise a jour du statut demarre du covoiturage.");
             }
 
             // Recuperer la liste
@@ -78,6 +79,66 @@ class CarpoolManagerService extends Service
                 'errors' => "Erreur lors du demarrage du covoiturage.",
             ];
         }
+    }
+
+    public function end_carpool(int $driverId, int $carpoolId): array
+    {
+        // Verifier les permissions
+        $check = $this->can_user_manage_carpool($driverId, $carpoolId);
+        if (!$check['can_manage'] || !$check['can_end']) {
+            return [
+                'success' => false,
+                'errors' => $check['error'] ?? "Impossible de demarrer ce covoiturage."
+            ];
+        }
+
+        try {
+            $this->connection->beginTransaction();
+
+            $carpoolUpdateStatus = $this->carpoolModel->update_carpool_status($carpoolId, $driverId, 'termine');
+            if (!$carpoolUpdateStatus) {
+                throw  new \Exception("Echec lors de la mise a jour du statut termine du covoiturage.");
+            }
+
+            // Recuperer la liste
+            $passengers = $this->carpoolModel->get_carpool_passengers($carpoolId);
+
+            // Envoyer des emails de notification aux passagers
+            foreach ($passengers as $passenger) {
+                $validationToken = $this->generate_validation_token($carpoolId, $passenger->passager_id);
+                $this->emailService->send_carpool_ended_notification(
+                    $passenger->email,
+                    $passenger->nom,
+                    $check['carpool']['lieu_depart'],
+                    $check['carpool']['lieu_arrivee'],
+                    $validationToken
+                );
+            }
+
+            // Enregistrer l'element (Dans mongoDB)
+            $this->carpoolModel->log_carpool_event($carpoolId, 'ended', [
+                'driver_id' => $driverId,
+                'passenger_count' => count($passengers),
+                'ended_at' => new \DateTime()
+            ]);
+
+            $this->connection->commit();
+
+            return [
+                'success' => true,
+                'message' => 'Covoiturage terminé avec succès.',
+                'notified_passengers' => count($passengers),
+            ];
+        }catch (\Exception $e) {
+            $this->connection->rollBack();
+            error_log("Erreur fin de covoiturage {$e->getMessage()}");
+            return [
+                'success' => false,
+                'errors' => "Erreur lors de l'arret du covoiturage.",
+            ];
+
+        }
+
     }
 
     public function can_user_manage_carpool(int $driverId, int $carpoolId): array
@@ -136,5 +197,30 @@ class CarpoolManagerService extends Service
                 'error' => "Erreur de verification."
             ];
         }
+    }
+
+    private function generate_validation_token(int $carpoolId, int $passengerId): string
+    {
+        $token = bin2hex(random_bytes(32));
+
+        try{
+            if ($this->mongoConnection) {
+                $collection = $this->mongoConnection->getCollection('valider_trajet');
+                $validationData = [
+                    'carpool_id' => $carpoolId,
+                    'passenger_id' => $passengerId,
+                    'token' => $token,
+                    'created_at' => new UTCDateTime(),
+                    'expires_at' => new UTCDateTime(time() * 1000 + (24 * 60 * 60 * 10000)),
+                    'statut' => 'pending'
+                ];
+
+                $collection->insertOne($validationData);
+            }
+        } catch (\Exception $e) {
+            error_log("[Token validation trajet]: {$e->getMessage()}");
+        }
+
+        return $token;
     }
 }

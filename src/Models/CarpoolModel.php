@@ -682,4 +682,32 @@ class CarpoolModel extends Model
         }
     }
 
+    public function count_carpools(string $statut = null) {
+        $params = [];
+        $query = "
+            SELECT COUNT(*) as count FROM covoiturage
+        ";
+        if ($statut) {
+            $query .= " WHERE statut = ?";
+            $params[] = $statut;
+        }
+
+        $stmt = $this->connection->prepare($query);
+        $stmt->execute($params);
+        $result = $stmt->fetch();
+
+        return $result->count;
+    }
+
+    public function count_reservations() {
+        $query = "
+            SELECT COUNT(*) as count FROM reservation
+        ";
+        $stmt = $this->connection->prepare($query);
+        $stmt->execute();
+        $result = $stmt->fetch();
+
+        return $result->count;
+    }
+
 }
